@@ -19,7 +19,7 @@ parser code
     public void syntax_error(Symbol s)
     {
         String lexema = s.value.toString();
-        int fila = s.left;
+        int fila = s.left + 1;
         int columna = s.right;
 
         System.err.println("Error sintactico en la linea: " + fila + " y columna: " + columna + ". No se esperaba el componente: " + lexema);
@@ -29,7 +29,7 @@ parser code
     public void unrecovered_syntax_error(Symbol s) throws java.lang.Exception
     {
         String lexema = s.value.toString();
-        int fila = s.left;
+        int fila = s.left + 1;
         int columna = s.right;
 
         System.err.println("Error sintactico inrrecuperable en la linea: " + fila + " y columna: " + columna + ". No se esperaba el componente: " + lexema);
@@ -108,7 +108,7 @@ terminal ERROR_IDENTIFICADOR,
 // |-------------------- NO TERMINALES --------------------| //
 
 non terminal inicio, programa, encabezado, cuerpo, variables, constantes, tipos, declarar_datos, declarar_funciones,
-            asignar_valores, parametros_entrada, cuerpo_func_proc, retorno_funcion;
+            asignar_valores, parametros_entrada, cuerpo_func_proc, retorno_funcion, _declarar_datos;
 
 non terminal sentencia_if, condicion_if, condicion_else, valores;
 
@@ -123,8 +123,10 @@ programa ::= PROGRAM IDENTIFICADOR encabezado BEGIN cuerpo END;
 
 encabezado ::= declarar_datos declarar_funciones;
 
-declarar_datos ::= VAR variables
-                | CONST constantes;
+declarar_datos ::= VAR variables // factorizar, PERO si pongo epsilon no funca el Syntax.java :/ ni idea
+                | VAR variables declarar_datos
+                | CONST constantes
+                | CONST constantes declarar_datos;
 
 variables ::= IDENTIFICADOR OPERADOR_DOS_PUNTOS tipos
             | IDENTIFICADOR OPERADOR_COMA variables;

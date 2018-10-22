@@ -4,14 +4,26 @@ import javafx.application.Application;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import lib.JavaKeywordsAsyncDemo;
+import org.fxmisc.richtext.CodeArea;
+import org.fxmisc.richtext.LineNumberFactory;
+import org.fxmisc.richtext.model.StyleSpans;
+import org.fxmisc.richtext.model.StyleSpansBuilder;
+import org.fxmisc.wellbehaved.event.EventPattern;
+import org.fxmisc.wellbehaved.event.InputMap;
+import org.fxmisc.wellbehaved.event.Nodes;
+import org.reactfx.Subscription;
 import vista.ItemTablaErrores;
 import vista.ItemTablaTokens;
 import vista.LineaToken;
@@ -19,9 +31,14 @@ import vista.LineaToken;
 import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import java_cup.runtime.*;
 
@@ -39,9 +56,65 @@ public class Main extends Application implements Cloneable  {
 
     @FXML public Button btn_abrir_archivo_id, btn_procesar_id;
 
+    @FXML private TextArea ta_errores_sintacticos_id;
+
+    @FXML public CodeArea ca_insertar_texto_id;
+    private ExecutorService executor;
+
     private List<LineaToken> tokenslist, tokenslistErrores;
 
     private Stage miPrimaryStage;
+
+    private static final String[] KEYWORDS = arrayToLower(sym.terminalNames);
+
+    @Override
+    public void start(Stage primaryStage) throws Exception
+    {
+        miPrimaryStage = primaryStage;
+        Parent root = FXMLLoader.load(getClass().getResource("../vista/GUI.fxml"));
+        miPrimaryStage.setTitle("Analizador Léxico y Sintáctico");
+        Scene miScene = new Scene(root);
+        miScene.getStylesheets().add(Main.class.getResource("java-keywords.css").toExternalForm());
+        miPrimaryStage.setScene(miScene);
+        miPrimaryStage.show();
+    }
+
+    @Override
+    public void stop() {
+        executor.shutdown();
+    }
+
+    public static void main(String[] args)
+    {
+        Path pathActual = Paths.get("");
+        String pathRaiz = pathActual.toAbsolutePath().toString();
+
+        generarLexer(pathRaiz);
+        generarSyntax(pathRaiz);
+
+        launch(args);
+    }
+
+    public static void generarLexer(String pPathRaiz)
+    {
+        String path = pPathRaiz + "/src/lexico/Lexer.flex";
+
+        File file = new File(path);
+        jflex.Main.generate(file);
+    }
+
+    private static void generarSyntax(String pPathRaiz)
+    {
+        String path = pPathRaiz + "/src/sintactico/Syntax.cup";
+
+        String[] asintactico = {"-parser", "Syntax",
+                                "-destdir", pPathRaiz + "\\src\\sintactico\\",
+                                "-symbols", "sym",
+                                path};
+
+        try { java_cup.Main.main(asintactico); }
+        catch (Exception e) { e.printStackTrace(); }
+    }
 
     public void probarLexerFile()
     {
@@ -52,7 +125,8 @@ public class Main extends Application implements Cloneable  {
 
         try {
             writer = new PrintWriter(fichero);
-            writer.print(ta_insertar_texto_id.getText()); // .toUpperCase();
+            // writer.print(ta_insertar_texto_id.getText()); // .toUpperCase();
+            writer.print(ca_insertar_texto_id.getText());
             writer.close();
         }
         catch (FileNotFoundException ex) {
@@ -119,51 +193,42 @@ public class Main extends Application implements Cloneable  {
         }
     }
 
-    @Override
-    public void start(Stage primaryStage) throws Exception
-    {
-        miPrimaryStage = primaryStage;
-        Parent root = FXMLLoader.load(getClass().getResource("../vista/GUI.fxml"));
-        miPrimaryStage.setTitle("Analizador Léxico y Sintáctico");
-        miPrimaryStage.setScene(new Scene(root, 1070, 623));
-        miPrimaryStage.show();
-    }
-
-    public static void main(String[] args)
-    {
-        Path pathActual = Paths.get("");
-        String pathRaiz = pathActual.toAbsolutePath().toString();
-
-        generarLexer(pathRaiz);
-        generarSyntax(pathRaiz);
-
-        launch(args);
-    }
-
-    public static void generarLexer(String pPathRaiz)
-    {
-        String path = pPathRaiz + "/src/lexico/Lexer.flex";
-
-        File file = new File(path);
-        jflex.Main.generate(file);
-    }
-
-    private static void generarSyntax(String pPathRaiz)
-    {
-        String path = pPathRaiz + "/src/sintactico/Syntax.cup";
-
-        String[] asintactico = {"-parser", "Syntax",
-                                "-destdir", pPathRaiz + "\\src\\sintactico\\",
-                                "-symbols", "sym",
-                                path};
-
-        try { java_cup.Main.main(asintactico); }
-        catch (Exception e) { e.printStackTrace(); }
-    }
-
     @FXML
     void initialize(){
         initTablesViews();
+        initCodeArea();
+    }
+
+    private void initCodeArea()
+    {
+        executor = Executors.newSingleThreadExecutor();
+        ca_insertar_texto_id.setParagraphGraphicFactory(LineNumberFactory.get(ca_insertar_texto_id));
+        Subscription cleanupWhenDone = ca_insertar_texto_id.multiPlainChanges()
+                .successionEnds(Duration.ofMillis(500))
+                .supplyTask(this::computeHighlightingAsync)
+                .awaitLatest(ca_insertar_texto_id.multiPlainChanges())
+                .filterMap(t -> {
+                    if(t.isSuccess()) {
+                        return Optional.of(t.get());
+                    } else {
+                        t.getFailure().printStackTrace();
+                        return Optional.empty();
+                    }
+                })
+                .subscribe(this::applyHighlighting);
+
+        // modificar los espacios del tab, porque los hace muy grandes
+        InputMap<KeyEvent> im = InputMap.consume(
+                EventPattern.keyPressed(KeyCode.TAB),
+                e -> {
+                    ca_insertar_texto_id.replaceSelection(miTab);
+                    e.consume();
+                });
+
+        Nodes.addInputMap(ca_insertar_texto_id, im);
+        // call when no longer need it: `cleanupWhenFinished.unsubscribe();`
+
+        //ca_insertar_texto_id.replaceText(0, 0, sampleCode);
     }
 
     /**
@@ -308,7 +373,8 @@ public class Main extends Application implements Cloneable  {
         //Show save file dialog
         File file = fileChooser.showOpenDialog(miPrimaryStage);
         if(file != null){
-            ta_insertar_texto_id.setText(readFile(file));
+            // ta_insertar_texto_id.setText(readFile(file));
+            ca_insertar_texto_id.replaceText(readFile(file));
         }
     }
 
@@ -327,7 +393,7 @@ public class Main extends Application implements Cloneable  {
 
             String text;
             while ((text = bufferedReader.readLine()) != null) {
-                stringBuffer.append(text + "\n");
+                stringBuffer.append(text.replaceAll("\t", miTab) + "\n");
             }
 
         } catch (FileNotFoundException ex) {
@@ -349,9 +415,72 @@ public class Main extends Application implements Cloneable  {
 
     private void imprimir(int pMsg) { System.out.println(pMsg); }
 
-    public Object clone() throws
-            CloneNotSupportedException
+    private static String[] arrayToLower(String[] pArray)
     {
-        return super.clone();
+        List<String> list = Arrays.asList(pArray);
+        list.replaceAll(String::toLowerCase);
+
+        return list.toArray(new String[list.size()]);
     }
+
+    // ============================ CodeArea ============================ \\
+
+    private String miTab = "    ";
+
+    private Task<StyleSpans<Collection<String>>> computeHighlightingAsync() {
+        String text = ca_insertar_texto_id.getText();
+        Task<StyleSpans<Collection<String>>> task = new Task<StyleSpans<Collection<String>>>() {
+            @Override
+            protected StyleSpans<Collection<String>> call() throws Exception {
+                return computeHighlighting(text);
+            }
+        };
+        executor.execute(task);
+        return task;
+    }
+
+    private void applyHighlighting(StyleSpans<Collection<String>> highlighting) {
+        ca_insertar_texto_id.setStyleSpans(0, highlighting);
+    }
+
+    private static StyleSpans<Collection<String>> computeHighlighting(String text) {
+        Matcher matcher = PATTERN.matcher(text);
+        int lastKwEnd = 0;
+        StyleSpansBuilder<Collection<String>> spansBuilder
+                = new StyleSpansBuilder<>();
+        while(matcher.find()) {
+            String styleClass =
+                    matcher.group("KEYWORD") != null ? "keyword" :
+                            matcher.group("PAREN") != null ? "paren" :
+                                    matcher.group("BRACE") != null ? "brace" :
+                                            matcher.group("BRACKET") != null ? "bracket" :
+                                                    matcher.group("SEMICOLON") != null ? "semicolon" :
+                                                            matcher.group("STRING") != null ? "string" :
+                                                                    matcher.group("COMMENT") != null ? "comment" :
+                                                                            null; /* never happens */ assert styleClass != null;
+            spansBuilder.add(Collections.emptyList(), matcher.start() - lastKwEnd);
+            spansBuilder.add(Collections.singleton(styleClass), matcher.end() - matcher.start());
+            lastKwEnd = matcher.end();
+        }
+        spansBuilder.add(Collections.emptyList(), text.length() - lastKwEnd);
+        return spansBuilder.create();
+    }
+
+    private static final String KEYWORD_PATTERN = "\\b(" + String.join("|", KEYWORDS) + ")\\b";
+    private static final String PAREN_PATTERN = "\\(|\\)";
+    private static final String BRACE_PATTERN = "\\{|\\}";
+    private static final String BRACKET_PATTERN = "\\[|\\]";
+    private static final String SEMICOLON_PATTERN = "\\;";
+    private static final String STRING_PATTERN = "\"([^\"\\\\]|\\\\.)*\"";
+    private static final String COMMENT_PATTERN = "//[^\n]*" + "|" + "/\\*(.|\\R)*?\\*/";
+
+    private static final Pattern PATTERN = Pattern.compile(
+            "(?<KEYWORD>" + KEYWORD_PATTERN + ")"
+                    + "|(?<PAREN>" + PAREN_PATTERN + ")"
+                    + "|(?<BRACE>" + BRACE_PATTERN + ")"
+                    + "|(?<BRACKET>" + BRACKET_PATTERN + ")"
+                    + "|(?<SEMICOLON>" + SEMICOLON_PATTERN + ")"
+                    + "|(?<STRING>" + STRING_PATTERN + ")"
+                    + "|(?<COMMENT>" + COMMENT_PATTERN + ")"
+    );
 }
