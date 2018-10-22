@@ -27,7 +27,7 @@ import java_cup.runtime.*;
 
 import sintactico.*;
 
-public class Main extends Application {
+public class Main extends Application implements Cloneable  {
 
     @FXML public TextArea ta_insertar_texto_id;
     @FXML public TableView<ItemTablaTokens> tv_tokens_encontrados_id;
@@ -59,30 +59,34 @@ public class Main extends Application {
             // Logger.getLogger(interfaz.class.getName()).log(Level.SEVERE, null, ex);
         }
 
-        Reader reader = null;
-        /*try {
-            reader = new BufferedReader(new FileReader("fichero.txt"));
+        // 2 reader's para solucionar problemas con las referencias de los objetos, porque el lexico itera el lexeme y
+        // jala tambien la referencia del reader y desmadra los objetos para cuando el sintactico realiza el analisis
+        Reader readerLexico = null, readerSintactico = null;
+        try {
+            readerLexico = new BufferedReader(new FileReader("fichero.txt"));
+            readerSintactico = new BufferedReader(new FileReader("fichero.txt"));
 
         } catch (FileNotFoundException e) {
             e.printStackTrace();
-        }*/
-        reader = new BufferedReader(new StringReader(ta_insertar_texto_id.getText()));
+        }
+        // reader = new BufferedReader(new StringReader(ta_insertar_texto_id.getText()));
 
-        ejecutarAnalizadorLexico(reader);
+        ejecutarAnalizadorLexico(readerLexico, readerSintactico);
     }
 
-    private void ejecutarAnalizadorLexico(Reader reader)
+    private void ejecutarAnalizadorLexico(Reader readerLexico, Reader readerSintactico)
     {
-        Lexer lexer = new Lexer(reader);
+        Lexer lexerLexico = new Lexer(readerLexico);
+        Lexer lexerSintactico = new Lexer(readerSintactico);
 
-        String resultado="";
         while (true)
         {
             Symbol token = null;
-            try {
-                token = lexer.next_token();
-            } catch (IOException e) {
+            try
+            {
+                token = lexerLexico.next_token();
             }
+            catch (IOException e) { }
 
             if (token == null || token.value == null)
             {
@@ -101,8 +105,7 @@ public class Main extends Application {
                 agregarLineaTokenErrores(token.value.toString(), sym.terminalNames[token.sym], token.left);
             }
         }
-
-        ejecutarAnalizadorSintactico(lexer);
+        ejecutarAnalizadorSintactico(lexerSintactico);
     }
 
     private void ejecutarAnalizadorSintactico(Lexer lexer)
@@ -154,12 +157,8 @@ public class Main extends Application {
                                 "-symbols", "sym",
                                 path};
 
-        try {
-            java_cup.Main.main(asintactico);
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
+        try { java_cup.Main.main(asintactico); }
+        catch (Exception e) { e.printStackTrace(); }
     }
 
     @FXML
@@ -328,7 +327,7 @@ public class Main extends Application {
 
             String text;
             while ((text = bufferedReader.readLine()) != null) {
-                stringBuffer.append(text);
+                stringBuffer.append(text + "\n");
             }
 
         } catch (FileNotFoundException ex) {
@@ -346,6 +345,13 @@ public class Main extends Application {
         return stringBuffer.toString();
     }
 
-
     private void imprimir(String pMsg) { System.out.println(pMsg); }
+
+    private void imprimir(int pMsg) { System.out.println(pMsg); }
+
+    public Object clone() throws
+            CloneNotSupportedException
+    {
+        return super.clone();
+    }
 }

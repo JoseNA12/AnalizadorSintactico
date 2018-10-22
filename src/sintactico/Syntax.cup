@@ -9,7 +9,9 @@ import java.io.InputStream;
 // http://themfgeek.blogspot.com/2012/10/sintaxis-cup.html
 // https://www.youtube.com/watch?v=bBuWPmDrF5M
 // https://youtu.be/tSaPDOT2I_4?t=1120
-// Días de trabajo: Octubre: 17, 19, 20
+// Días de trabajo: Octubre: 17, 19, 20, 21
+
+// TODO: QUITAR -> case, repeat y arreglos.
 
 parser code
 {:
@@ -20,7 +22,7 @@ parser code
         int fila = s.left;
         int columna = s.right;
 
-        System.err.println("Error sintactico en la linea: " + fila + "y columna: " + columna + ". No se esperaba el componente: " + lexema);
+        System.err.println("Error sintactico en la linea: " + fila + " y columna: " + columna + ". No se esperaba el componente: " + lexema);
     }
 
     // Metodo al que se llama en el momento en que ya no es posible una recuperacion de errores
@@ -30,10 +32,24 @@ parser code
         int fila = s.left;
         int columna = s.right;
 
-        System.err.println("Error sintactico inrrecuperable en la linea: " + fila + "y columna: " + columna + ". No se esperaba el componente: " + lexema);
+        System.err.println("Error sintactico inrrecuperable en la linea: " + fila + " y columna: " + columna + ". No se esperaba el componente: " + lexema);
+    }
+
+    public void report_error(String message, Object info)
+    {
+        StringBuffer m = new StringBuffer(message);
+        if (info instanceof Symbol)
+        {
+            if (((Symbol)info).left != -1 && ((Symbol)info).right != -1)
+            {
+            int line = (((Symbol)info).left)+1;
+            int column = (((Symbol)info).right)+1;
+            m.append(" (line "+line+", column "+column+")");
+            }
+        }
+        System.err.println(m);
     }
 :}
-
 
 // |-------------------- TERMINALES --------------------| //
 
@@ -54,6 +70,8 @@ terminal OPERADOR,
         OPERADOR_CORCHETE_ABRIR,
         OPERADOR_CORCHETE_CERRAR,
         OPERADOR_ASIGNACION,
+        OPERADOR_DIFERENTE_DE,
+        OPERADOR_IGUAL_A,
         OPERADOR_ASIGNACION_ADICION,
         OPERADOR_ASIGNACION_SUSTRACCION,
         OPERADOR_ASIGNACION_MULTIPLICACION,
@@ -61,7 +79,11 @@ terminal OPERADOR,
         OPERADOR_DESPLAZAMIENTO_DERECHA,
         OPERADOR_DESPLAZAMIENTO_IZQUIERDA,
         OPERADOR_ASIGNACION_DESPLAZAMIENTO_DERECHA,
-        OPERADOR_ASIGNACION_DESPLAZAMIENTO_IZQUIERDA;
+        OPERADOR_ASIGNACION_DESPLAZAMIENTO_IZQUIERDA,
+
+        OPERADOR_COMA,
+        OPERADOR_PUNTO_Y_COMA,
+        OPERADOR_DOS_PUNTOS;
 
 terminal IDENTIFICADOR,
         LITERAL_NUM_FLOTANTE,
@@ -69,7 +91,7 @@ terminal IDENTIFICADOR,
         LITERAL_NUM_ENTERO,
         PALABRA_RESERVADA;
 
-terminal BEGIN, END;
+terminal PROGRAM, BEGIN, END, CONST, VAR, FUNCTION, PROCEDURE;
 
 terminal IF, THEN, ELSE;
 
@@ -83,39 +105,64 @@ terminal ERROR_IDENTIFICADOR,
         ERROR_PALABRA_RESERVADA,
         ERROR_OPERADOR;
 
-
 // |-------------------- NO TERMINALES --------------------| //
 
-non terminal inicio;
+non terminal inicio, programa, encabezado, cuerpo, variables, constantes, tipos, declarar_datos, declarar_funciones,
+            asignar_valores, parametros_entrada, cuerpo_func_proc, retorno_funcion;
 
-// Estructura de control IF
-// non terminal estructura_control_if, sentencia_if, sentencia_else, booleano;
-non terminal sentencia_if, condicion;
+non terminal sentencia_if, condicion_if, condicion_else, valores;
 
 start with inicio;
 
 // |-------------------- REGLAS SEMANTICAS --------------------| //
-inicio ::= sentencia_if;
 
-sentencia_if ::= IF condicion THEN;
 
-condicion ::= IDENTIFICADOR OPERADOR_MAYOR_QUE IDENTIFICADOR {: System.out.println("Mayor que"); :}
-            | IDENTIFICADOR OPERADOR_MENOR_QUE IDENTIFICADOR {: System.out.println("Menor que"); :}
-            | IDENTIFICADOR OPERADOR_MAYOR_IGUAL_QUE IDENTIFICADOR
-            | IDENTIFICADOR OPERADOR_MENOR_IGUAL_QUE IDENTIFICADOR;
+inicio ::= programa;
 
-/*
-INICIO ::= ESTRUCTURA_CONTROL_IF;
+programa ::= PROGRAM IDENTIFICADOR encabezado BEGIN cuerpo END;
 
-ESTRUCTURA_CONTROL_IF ::= SENTENCIA_IF SENTENCIA_ELSE
-                        | SENTENCIA_IF ;
+encabezado ::= declarar_datos declarar_funciones;
 
-SENTENCIA_IF ::= if BOOLEANO then
-                | if BOOLEANO then SENTENCIA_IF
-                | if BOOLEANO then SENTENCIA_IF SENTENCIA_ELSE;
+declarar_datos ::= VAR variables
+                | CONST constantes;
 
-SENTENCIA_ELSE ::= else
-                | else ESTRUCTURA_CONTROL_IF;
+variables ::= IDENTIFICADOR OPERADOR_DOS_PUNTOS tipos
+            | IDENTIFICADOR OPERADOR_COMA variables;
 
-BOOLEANO ::= true | false;
-*/
+constantes ::= IDENTIFICADOR OPERADOR_DOS_PUNTOS tipos
+            | IDENTIFICADOR OPERADOR_COMA constantes;
+
+declarar_funciones ::= FUNCTION IDENTIFICADOR OPERADOR_PARENTESIS_ABRIR parametros_entrada OPERADOR_PARENTESIS_CERRAR OPERADOR_DOS_PUNTOS tipos
+                    BEGIN
+                    cuerpo_func_proc
+                    retorno_funcion
+                    END;
+
+parametros_entrada ::= tipos IDENTIFICADOR
+                    | tipos IDENTIFICADOR OPERADOR_COMA parametros_entrada;
+
+cuerpo_func_proc ::= declarar_datos;
+
+tipos ::= INT | SHORTINT | LONGINT | REAL | STRING | CHAR | BOOLEAN;
+
+asignar_valores ::= IDENTIFICADOR OPERADOR_ASIGNACION valores OPERADOR_PUNTO_Y_COMA;
+
+retorno_funcion ::= IDENTIFICADOR OPERADOR_ASIGNACION valores;
+
+cuerpo ::= IDENTIFICADOR; // modificar
+
+sentencia_if ::= IF condicion_if THEN // meter lo que puede tener el if
+            | IF condicion_if THEN condicion_else;
+
+condicion_if ::= valores OPERADOR_MAYOR_QUE valores
+            | valores OPERADOR_MAYOR_IGUAL_QUE valores
+            | valores OPERADOR_MENOR_QUE valores
+            | valores OPERADOR_MENOR_IGUAL_QUE valores
+            | valores OPERADOR_ASIGNACION valores
+            | valores OPERADOR_DIFERENTE_DE valores;
+
+condicion_else ::= ELSE END
+                | ELSE condicion_if END
+                | ELSE condicion_if condicion_if;
+
+valores ::= IDENTIFICADOR | LITERAL_NUM_ENTERO | LITERAL_NUM_FLOTANTE | LITERAL_STRING;
