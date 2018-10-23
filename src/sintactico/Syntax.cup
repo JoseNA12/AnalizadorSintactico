@@ -9,6 +9,7 @@ import java.io.InputStream;
 // http://themfgeek.blogspot.com/2012/10/sintaxis-cup.html
 // https://www.youtube.com/watch?v=bBuWPmDrF5M
 // https://youtu.be/tSaPDOT2I_4?t=1120
+// https://github.com/jflex-de/jflex/blob/master/jflex/examples/cup-java/src/main/cup/java12.cup
 // Días de trabajo: Octubre: 17, 19, 20, 21
 
 // TODO: QUITAR -> case, repeat y arreglos.
@@ -83,7 +84,9 @@ terminal OPERADOR,
 
         OPERADOR_COMA,
         OPERADOR_PUNTO_Y_COMA,
-        OPERADOR_DOS_PUNTOS;
+        OPERADOR_DOS_PUNTOS,
+
+        OR, AND, NOT;
 
 terminal IDENTIFICADOR,
         LITERAL_NUM_FLOTANTE,
@@ -108,25 +111,25 @@ terminal ERROR_IDENTIFICADOR,
 // |-------------------- NO TERMINALES --------------------| //
 
 non terminal inicio, programa, encabezado, cuerpo, variables, constantes, tipos, declarar_datos, declarar_funciones,
-            asignar_valores, parametros_entrada, cuerpo_func_proc, retorno_funcion, _declarar_datos;
+            declarar_procedimientos, asignar_valores, parametros_entrada, cuerpo_func_proc, retorno_funcion, boolean;
 
-non terminal sentencia_if, condicion_if, condicion_else, valores;
+non terminal sentencia_if, condicion_if, sentencia_else, valores, _condicion_if;
+
+non terminal Symbol epsilon;
 
 start with inicio;
 
 // |-------------------- REGLAS SEMANTICAS --------------------| //
 
-
-inicio ::= programa;
+inicio ::= programa {: System.out.println("Correcto!"); :};
 
 programa ::= PROGRAM IDENTIFICADOR encabezado BEGIN cuerpo END;
 
-encabezado ::= declarar_datos declarar_funciones;
+encabezado ::= declarar_datos declarar_funciones declarar_procedimientos;
 
-declarar_datos ::= VAR variables // factorizar, PERO si pongo epsilon no funca el Syntax.java :/ ni idea
-                | VAR variables declarar_datos
-                | CONST constantes
-                | CONST constantes declarar_datos;
+declarar_datos ::= VAR variables declarar_datos
+                | CONST constantes declarar_datos
+                | epsilon;
 
 variables ::= IDENTIFICADOR OPERADOR_DOS_PUNTOS tipos
             | IDENTIFICADOR OPERADOR_COMA variables;
@@ -138,7 +141,16 @@ declarar_funciones ::= FUNCTION IDENTIFICADOR OPERADOR_PARENTESIS_ABRIR parametr
                     BEGIN
                     cuerpo_func_proc
                     retorno_funcion
-                    END;
+                    END
+                    declarar_funciones
+                    | epsilon;
+
+declarar_procedimientos ::= PROCEDURE IDENTIFICADOR OPERADOR_PARENTESIS_ABRIR parametros_entrada OPERADOR_PARENTESIS_CERRAR
+                    BEGIN
+                    cuerpo_func_proc
+                    END
+                    declarar_procedimientos
+                    | epsilon;
 
 parametros_entrada ::= tipos IDENTIFICADOR
                     | tipos IDENTIFICADOR OPERADOR_COMA parametros_entrada;
@@ -151,20 +163,25 @@ asignar_valores ::= IDENTIFICADOR OPERADOR_ASIGNACION valores OPERADOR_PUNTO_Y_C
 
 retorno_funcion ::= IDENTIFICADOR OPERADOR_ASIGNACION valores;
 
-cuerpo ::= IDENTIFICADOR; // modificar
+cuerpo ::= sentencia_if | epsilon; // modificar
 
 sentencia_if ::= IF condicion_if THEN // meter lo que puede tener el if
-            | IF condicion_if THEN condicion_else;
+            | IF condicion_if THEN sentencia_else;
 
-condicion_if ::= valores OPERADOR_MAYOR_QUE valores
-            | valores OPERADOR_MAYOR_IGUAL_QUE valores
-            | valores OPERADOR_MENOR_QUE valores
-            | valores OPERADOR_MENOR_IGUAL_QUE valores
-            | valores OPERADOR_ASIGNACION valores
-            | valores OPERADOR_DIFERENTE_DE valores;
+condicion_if ::= valores OPERADOR_MAYOR_QUE valores _condicion_if
+            | valores OPERADOR_MAYOR_IGUAL_QUE valores _condicion_if
+            | valores OPERADOR_MENOR_QUE valores _condicion_if
+            | valores OPERADOR_MENOR_IGUAL_QUE valores _condicion_if
+            | valores OPERADOR_ASIGNACION valores _condicion_if
+            | valores OPERADOR_DIFERENTE_DE valores _condicion_if
+            | OPERADOR_PARENTESIS_ABRIR condicion_if OPERADOR_PARENTESIS_CERRAR _condicion_if;
 
-condicion_else ::= ELSE END
-                | ELSE condicion_if END
-                | ELSE condicion_if condicion_if;
+_condicion_if ::= AND condicion_if | OR condicion_if | epsilon;
 
-valores ::= IDENTIFICADOR | LITERAL_NUM_ENTERO | LITERAL_NUM_FLOTANTE | LITERAL_STRING;
+sentencia_else ::= ELSE END
+                | ELSE sentencia_if END;
+
+valores ::= IDENTIFICADOR | LITERAL_NUM_ENTERO | LITERAL_NUM_FLOTANTE | LITERAL_STRING | boolean;
+boolean ::= TRUE | FALSE;
+
+epsilon ::= {: RESULT = new Symbol(-1); :};

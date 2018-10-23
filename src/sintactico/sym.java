@@ -9,64 +9,67 @@ package sintactico;
 public class sym {
   /* terminals */
   public static final int OPERADOR_ASIGNACION_DESPLAZAMIENTO_IZQUIERDA = 27;
-  public static final int ERROR_IDENTIFICADOR = 55;
-  public static final int FUNCTION = 41;
+  public static final int ERROR_IDENTIFICADOR = 58;
+  public static final int FUNCTION = 44;
   public static final int OPERADOR_CORCHETE_ABRIR = 15;
-  public static final int CHAR = 51;
-  public static final int CONST = 39;
+  public static final int CHAR = 54;
+  public static final int CONST = 42;
   public static final int OPERADOR_MULTIPLICACION = 11;
   public static final int OPERADOR_MENOR_QUE = 8;
-  public static final int INT = 48;
+  public static final int INT = 51;
   public static final int OPERADOR_SUSTRACCION = 10;
-  public static final int IDENTIFICADOR = 31;
+  public static final int IDENTIFICADOR = 34;
   public static final int OPERADOR_DIVISION = 12;
+  public static final int NOT = 33;
+  public static final int AND = 32;
   public static final int OPERADOR_ASIGNACION_DIVISION = 23;
   public static final int OPERADOR_DIFERENTE_DE = 18;
   public static final int OPERADOR_ASIGNACION_DESPLAZAMIENTO_DERECHA = 26;
   public static final int OPERADOR_ASIGNACION_SUSTRACCION = 21;
-  public static final int BEGIN = 37;
+  public static final int OR = 31;
+  public static final int BEGIN = 40;
   public static final int OPERADOR_DOS_PUNTOS = 30;
-  public static final int LITERAL_NUM_ENTERO = 34;
+  public static final int LITERAL_NUM_ENTERO = 37;
   public static final int OPERADOR_DISMINUCION = 4;
-  public static final int IF = 43;
-  public static final int BOOLEAN = 53;
+  public static final int IF = 46;
+  public static final int BOOLEAN = 56;
   public static final int EOF = 0;
-  public static final int TRUE = 46;
+  public static final int TRUE = 49;
   public static final int OPERADOR_PARENTESIS_ABRIR = 13;
-  public static final int PROGRAM = 36;
+  public static final int PROGRAM = 39;
   public static final int OPERADOR_DESPLAZAMIENTO_IZQUIERDA = 25;
   public static final int error = 1;
   public static final int OPERADOR_PARENTESIS_CERRAR = 14;
   public static final int OPERADOR_MAYOR_IGUAL_QUE = 5;
-  public static final int PALABRA_RESERVADA = 35;
+  public static final int PALABRA_RESERVADA = 38;
   public static final int OPERADOR_INCREMENTO = 3;
-  public static final int REAL = 54;
-  public static final int ERROR_PALABRA_RESERVADA = 57;
-  public static final int SHORTINT = 50;
+  public static final int REAL = 57;
+  public static final int ERROR_PALABRA_RESERVADA = 60;
+  public static final int SHORTINT = 53;
   public static final int OPERADOR_ASIGNACION_ADICION = 20;
-  public static final int ERROR_OPERADOR = 58;
-  public static final int ELSE = 45;
+  public static final int ERROR_OPERADOR = 61;
+  public static final int ELSE = 48;
   public static final int OPERADOR_PUNTO_Y_COMA = 29;
   public static final int OPERADOR_COMA = 28;
   public static final int OPERADOR = 2;
-  public static final int LITERAL_STRING = 33;
+  public static final int LITERAL_STRING = 36;
   public static final int OPERADOR_MENOR_IGUAL_QUE = 7;
-  public static final int THEN = 44;
-  public static final int ERROR_LITERAL = 56;
-  public static final int END = 38;
-  public static final int STRING = 52;
+  public static final int THEN = 47;
+  public static final int ERROR_LITERAL = 59;
+  public static final int END = 41;
+  public static final int STRING = 55;
   public static final int OPERADOR_ADICION = 9;
   public static final int OPERADOR_ASIGNACION = 17;
   public static final int OPERADOR_DESPLAZAMIENTO_DERECHA = 24;
   public static final int OPERADOR_IGUAL_A = 19;
   public static final int OPERADOR_MAYOR_QUE = 6;
-  public static final int FALSE = 47;
+  public static final int FALSE = 50;
   public static final int OPERADOR_CORCHETE_CERRAR = 16;
-  public static final int LONGINT = 49;
-  public static final int PROCEDURE = 42;
-  public static final int VAR = 40;
+  public static final int LONGINT = 52;
+  public static final int PROCEDURE = 45;
+  public static final int VAR = 43;
   public static final int OPERADOR_ASIGNACION_MULTIPLICACION = 22;
-  public static final int LITERAL_NUM_FLOTANTE = 32;
+  public static final int LITERAL_NUM_FLOTANTE = 35;
   public static final String[] terminalNames = new String[] {
   "EOF",
   "error",
@@ -99,6 +102,9 @@ public class sym {
   "OPERADOR_COMA",
   "OPERADOR_PUNTO_Y_COMA",
   "OPERADOR_DOS_PUNTOS",
+  "OR",
+  "AND",
+  "NOT",
   "IDENTIFICADOR",
   "LITERAL_NUM_FLOTANTE",
   "LITERAL_STRING",

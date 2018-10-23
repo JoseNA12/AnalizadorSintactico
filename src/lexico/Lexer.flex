@@ -7,9 +7,9 @@ import sintactico.*;
 %ignorecase
 %cup
 %line
+%column
 %{
 public String lexeme;
-public int line;
 %}
 
 // LENGUAGE: ABC
@@ -58,7 +58,7 @@ ACENTO = [ñÑáéíóúÁÉÍÓÚ]
 "<<=" {return new Symbol(sym.OPERADOR_ASIGNACION_DESPLAZAMIENTO_DERECHA, yyline, yycolumn, yytext());}
 ">>=" {return new Symbol(sym.OPERADOR_ASIGNACION_DESPLAZAMIENTO_IZQUIERDA, yyline, yycolumn, yytext());}
 
-"AND" {return new Symbol(sym.PALABRA_RESERVADA, yyline, yycolumn, yytext());}
+"AND" {return new Symbol(sym.AND, yyline, yycolumn, yytext());}
 "ARRAY" {return new Symbol(sym.PALABRA_RESERVADA, yyline, yycolumn, yytext());}
 "BEGIN" {return new Symbol(sym.BEGIN, yyline, yycolumn, yytext());}
 "BOOLEAN" {return new Symbol(sym.BOOLEAN, yyline, yycolumn, yytext());}
@@ -85,9 +85,9 @@ ACENTO = [ñÑáéíóúÁÉÍÓÚ]
 "LONGINT" {return new Symbol(sym.LONGINT, yyline, yycolumn, yytext());}
 "MOD" {return new Symbol(sym.PALABRA_RESERVADA, yyline, yycolumn, yytext());} // operador
 "NIL" {return new Symbol(sym.PALABRA_RESERVADA, yyline, yycolumn, yytext());}
-"NOT" {return new Symbol(sym.PALABRA_RESERVADA, yyline, yycolumn, yytext());} // operador
+"NOT" {return new Symbol(sym.NOT, yyline, yycolumn, yytext());} // operador
 "OF" {return new Symbol(sym.PALABRA_RESERVADA, yyline, yycolumn, yytext());}
-"OR" {return new Symbol(sym.PALABRA_RESERVADA, yyline, yycolumn, yytext());} // operador
+"OR" {return new Symbol(sym.OR, yyline, yycolumn, yytext());} // operador
 "PACKED" {return new Symbol(sym.PALABRA_RESERVADA, yyline, yycolumn, yytext());}
 "PROCEDURE" {return new Symbol(sym.PROCEDURE, yyline, yycolumn, yytext());}
 "PROGRAM" {return new Symbol(sym.PROGRAM, yyline, yycolumn, yytext());}
@@ -108,7 +108,6 @@ ACENTO = [ñÑáéíóúÁÉÍÓÚ]
 "WITH" {return new Symbol(sym.PALABRA_RESERVADA, yyline, yycolumn, yytext());}
 "WRITE" {return new Symbol(sym.PALABRA_RESERVADA, yyline, yycolumn, yytext());}
 "XOR" {return new Symbol(sym.PALABRA_RESERVADA, yyline, yycolumn, yytext());} // operador
-
 
 // |-------------------- RECONOCER EXPRESIONES --------------------| // {return new Symbol(sym.OPERADOR, yyline, yychar, yytext());}
 // Identificadores
