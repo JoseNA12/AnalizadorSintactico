@@ -1,0 +1,39 @@
+program miPrograma
+
+    var miVar1: boolean
+    var miVar2, miVar3: int
+    var miVar4, miVar5, miVar6: real
+
+    const miVar6: string
+    const miVar7, miVar8: char
+
+    function miFuncion (int pEntrada1, string pEntrada2): boolean
+    begin
+
+        var miVarC1, miVarC2: boolean
+        const variableConstante: int
+
+        // falta el cuerpo
+        
+        resultado := "Soy el dueño de tu love <3"
+
+    end
+
+    procedure miProcedimiento (real pEntrada1)
+    begin
+
+        var miVarC1, miVarC2: boolean
+
+    end
+
+    begin
+        {*
+            Cuerpo
+        *}
+
+        if var1 <> var2 or (var1 >= var3) then
+        else
+            if bandera <> true then
+        end
+
+    end

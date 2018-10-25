@@ -86,7 +86,9 @@ terminal OPERADOR,
         OPERADOR_PUNTO_Y_COMA,
         OPERADOR_DOS_PUNTOS,
 
-        OR, AND, NOT;
+        OR, AND, NOT,
+
+        MOD, DIV;
 
 terminal IDENTIFICADOR,
         LITERAL_NUM_FLOTANTE,
@@ -96,7 +98,7 @@ terminal IDENTIFICADOR,
 
 terminal PROGRAM, BEGIN, END, CONST, VAR, FUNCTION, PROCEDURE;
 
-terminal IF, THEN, ELSE;
+terminal IF, THEN, ELSE, WHILE, REPEAT, UNTIL, FOR, TO, DO;
 
 terminal TRUE, FALSE;
 
@@ -111,9 +113,11 @@ terminal ERROR_IDENTIFICADOR,
 // |-------------------- NO TERMINALES --------------------| //
 
 non terminal inicio, programa, encabezado, cuerpo, variables, constantes, tipos, declarar_datos, declarar_funciones,
-            declarar_procedimientos, asignar_valores, parametros_entrada, cuerpo_func_proc, retorno_funcion, boolean;
+            declarar_procedimientos, declarar_datos_, asignar_valores, parametros_entrada, retorno_funcion, boolean, expr_aritmeticas,
+            _expr_aritmeticas, __expr_aritmeticas, operadores_aritmeticos, estruc_de_control;
 
-non terminal sentencia_if, condicion_if, sentencia_else, valores, _condicion_if;
+non terminal sentencia_if, expr_booleanas, sentencia_else, valores, _valores, __valores, _expr_booleanas, sentencia_while,
+            sentencia_repeat, sentencia_for, operadores_booleanos;
 
 non terminal Symbol epsilon;
 
@@ -123,13 +127,18 @@ start with inicio;
 
 inicio ::= programa {: System.out.println("Correcto!"); :};
 
-programa ::= PROGRAM IDENTIFICADOR encabezado BEGIN cuerpo END;
+programa ::= PROGRAM IDENTIFICADOR encabezado
+            BEGIN
+            cuerpo
+            END;
 
 encabezado ::= declarar_datos declarar_funciones declarar_procedimientos;
 
+// ------------------------------ Encabezado ---------------------------------------------------------------------------
+
 declarar_datos ::= VAR variables declarar_datos
                 | CONST constantes declarar_datos
-                | epsilon;
+                ;
 
 variables ::= IDENTIFICADOR OPERADOR_DOS_PUNTOS tipos
             | IDENTIFICADOR OPERADOR_COMA variables;
@@ -137,51 +146,93 @@ variables ::= IDENTIFICADOR OPERADOR_DOS_PUNTOS tipos
 constantes ::= IDENTIFICADOR OPERADOR_DOS_PUNTOS tipos
             | IDENTIFICADOR OPERADOR_COMA constantes;
 
+declarar_datos_ ::= declarar_funciones declarar_datos_
+                | declarar_procedimientos declarar_datos_
+                ;
+
 declarar_funciones ::= FUNCTION IDENTIFICADOR OPERADOR_PARENTESIS_ABRIR parametros_entrada OPERADOR_PARENTESIS_CERRAR OPERADOR_DOS_PUNTOS tipos
                     BEGIN
-                    cuerpo_func_proc
+                    cuerpo
                     retorno_funcion
                     END
                     declarar_funciones
-                    | epsilon;
+                    ;
 
 declarar_procedimientos ::= PROCEDURE IDENTIFICADOR OPERADOR_PARENTESIS_ABRIR parametros_entrada OPERADOR_PARENTESIS_CERRAR
                     BEGIN
-                    cuerpo_func_proc
+                    cuerpo
                     END
                     declarar_procedimientos
-                    | epsilon;
+                    ;
 
 parametros_entrada ::= tipos IDENTIFICADOR
                     | tipos IDENTIFICADOR OPERADOR_COMA parametros_entrada;
-
-cuerpo_func_proc ::= declarar_datos;
-
-tipos ::= INT | SHORTINT | LONGINT | REAL | STRING | CHAR | BOOLEAN;
 
 asignar_valores ::= IDENTIFICADOR OPERADOR_ASIGNACION valores OPERADOR_PUNTO_Y_COMA;
 
 retorno_funcion ::= IDENTIFICADOR OPERADOR_ASIGNACION valores;
 
-cuerpo ::= sentencia_if | epsilon; // modificar
+cuerpo ::= declarar_datos | asignar_valores | expr_aritmeticas | estruc_de_control
+        ;
 
-sentencia_if ::= IF condicion_if THEN // meter lo que puede tener el if
-            | IF condicion_if THEN sentencia_else;
+// ------------------------------ Estructuras de Control ---------------------------------------------------------------
 
-condicion_if ::= valores OPERADOR_MAYOR_QUE valores _condicion_if
-            | valores OPERADOR_MAYOR_IGUAL_QUE valores _condicion_if
-            | valores OPERADOR_MENOR_QUE valores _condicion_if
-            | valores OPERADOR_MENOR_IGUAL_QUE valores _condicion_if
-            | valores OPERADOR_ASIGNACION valores _condicion_if
-            | valores OPERADOR_DIFERENTE_DE valores _condicion_if
-            | OPERADOR_PARENTESIS_ABRIR condicion_if OPERADOR_PARENTESIS_CERRAR _condicion_if;
-
-_condicion_if ::= AND condicion_if | OR condicion_if | epsilon;
+sentencia_if ::= IF expr_booleanas THEN
+            | IF expr_booleanas THEN
+            sentencia_else
+            ;
 
 sentencia_else ::= ELSE END
+                //| ELSE cuerpo END
                 | ELSE sentencia_if END;
 
-valores ::= IDENTIFICADOR | LITERAL_NUM_ENTERO | LITERAL_NUM_FLOTANTE | LITERAL_STRING | boolean;
-boolean ::= TRUE | FALSE;
+sentencia_while ::= WHILE expr_booleanas DO
+                    BEGIN
+                    // cuerpo
+                    END;
+
+sentencia_repeat ::= REPEAT
+                    // cuerpo
+                    UNTIL expr_booleanas;
+
+sentencia_for ::= FOR IDENTIFICADOR OPERADOR_ASIGNACION valores TO valores DO
+                  BEGIN
+                  // cuerpo
+                  END;
+
+estruc_de_control ::= sentencia_if | sentencia_while | sentencia_for | sentencia_repeat;
+
+// ------------------------------ Expresiones --------------------------------------------------------------------------
+
+expr_aritmeticas ::= valores operadores_aritmeticos valores _expr_aritmeticas
+              | OPERADOR_PARENTESIS_ABRIR expr_aritmeticas OPERADOR_PARENTESIS_CERRAR;
+
+_expr_aritmeticas ::= operadores_aritmeticos valores __expr_aritmeticas;
+
+__expr_aritmeticas ::= _expr_aritmeticas | epsilon;
+
+expr_booleanas ::= valores operadores_booleanos valores _expr_booleanas
+            | OPERADOR_PARENTESIS_ABRIR expr_booleanas OPERADOR_PARENTESIS_CERRAR _expr_booleanas;
+
+_expr_booleanas ::= AND expr_booleanas | OR expr_booleanas | epsilon;
+
+// ------------------------------ Símbolos -----------------------------------------------------------------------------
+
+operadores_aritmeticos ::= OPERADOR_ADICION | OPERADOR_DISMINUCION | OPERADOR_MULTIPLICACION | OPERADOR_DIVISION
+                        | MOD | OPERADOR_ASIGNACION_ADICION | OPERADOR_ASIGNACION_SUSTRACCION
+                        | OPERADOR_ASIGNACION_MULTIPLICACION | OPERADOR_ASIGNACION_DIVISION | DIV;
+
+operadores_booleanos ::= OPERADOR_MAYOR_QUE | OPERADOR_MAYOR_IGUAL_QUE | OPERADOR_MENOR_QUE | OPERADOR_MENOR_IGUAL_QUE
+                        | OPERADOR_ASIGNACION | OPERADOR_DIFERENTE_DE;
+
+valores ::= _valores | LITERAL_NUM_ENTERO | LITERAL_NUM_FLOTANTE | LITERAL_STRING | boolean;
+
+_valores ::= IDENTIFICADOR __valores;
+
+__valores ::= OPERADOR_INCREMENTO | OPERADOR_DISMINUCION | epsilon;
+
+boolean ::= TRUE | FALSE | NOT IDENTIFICADOR | NOT TRUE | NOT FALSE;
+
+tipos ::= INT | SHORTINT | LONGINT | REAL | STRING | CHAR | BOOLEAN;
 
 epsilon ::= {: RESULT = new Symbol(-1); :};
