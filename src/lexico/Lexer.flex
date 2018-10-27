@@ -91,7 +91,7 @@ ACENTO = [ñÑáéíóúÁÉÍÓÚ]
 "PACKED" {return new Symbol(sym.PALABRA_RESERVADA, yyline, yycolumn, yytext());}
 "PROCEDURE" {return new Symbol(sym.PROCEDURE, yyline, yycolumn, yytext());}
 "PROGRAM" {return new Symbol(sym.PROGRAM, yyline, yycolumn, yytext());}
-"READ" {return new Symbol(sym.PALABRA_RESERVADA, yyline, yycolumn, yytext());}
+"READ" {return new Symbol(sym.READ, yyline, yycolumn, yytext());}
 "REAL" {return new Symbol(sym.REAL, yyline, yycolumn, yytext());}
 "RECORD" {return new Symbol(sym.PALABRA_RESERVADA, yyline, yycolumn, yytext());}
 "REPEAT" {return new Symbol(sym.REPEAT, yyline, yycolumn, yytext());}
@@ -106,7 +106,7 @@ ACENTO = [ñÑáéíóúÁÉÍÓÚ]
 "VAR" {return new Symbol(sym.VAR, yyline, yycolumn, yytext());}
 "WHILE" {return new Symbol(sym.WHILE, yyline, yycolumn, yytext());}
 "WITH" {return new Symbol(sym.PALABRA_RESERVADA, yyline, yycolumn, yytext());}
-"WRITE" {return new Symbol(sym.PALABRA_RESERVADA, yyline, yycolumn, yytext());}
+"WRITE" {return new Symbol(sym.WRITE, yyline, yycolumn, yytext());}
 "XOR" {return new Symbol(sym.PALABRA_RESERVADA, yyline, yycolumn, yytext());} // operador
 
 // |-------------------- RECONOCER EXPRESIONES --------------------| // {return new Symbol(sym.OPERADOR, yyline, yychar, yytext());}
