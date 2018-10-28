@@ -111,14 +111,14 @@ terminal ERROR_IDENTIFICADOR,
 
 // |-------------------- NO TERMINALES --------------------| //
 
-non terminal inicio, programa, encabezado, _encabezado, cuerpo, _cuerpo, variables, constantes, tipos, declarar_datos,
+non terminal inicio, programa, encabezado, cuerpo, _cuerpo, variables, constantes, tipos, declarar_datos,
             declarar_funciones, declarar_procedimientos, asignar_valores, _asignar_valores, parametros_entrada,
-            retorno_funcion, expr_aritmeticas, expr_aritmeticas_, expr_aritmeticas__, _expr_aritmeticas, __expr_aritmeticas,
-            ___expr_aritmeticas, ____expr_aritmeticas, operadores_aritmeticos, _operadores_aritmeticos, __operadores_aritmeticos,
+            retorno_funcion, expr_aritmeticas, _expr_aritmeticas,
+            operadores_aritmeticos, _operadores_aritmeticos, __operadores_aritmeticos,
             ___operadores_aritmeticos, estruc_de_control, parametros_llamada_func, _parametros_llamada_func, llamar_func_o_proc,
-            _llamar_func_o_proc, expr_read_write, expr_read, _expr_read, expr_write, _expr_write,
+            expr_read_write, expr_read, _expr_read, expr_write, _expr_write,
 
-            sentencia_if, _sentencia_if, expr_booleanas, sentencia_else, _sentencia_else, tokens, _tokens,
+            sentencia_if, _sentencia_if, expr_booleanas, sentencia_else, tokens, _tokens,
             _expr_booleanas, sentencia_while, sentencia_for, operadores_booleanos, tokens_boolean;
 
 non terminal Symbol epsilon;
@@ -135,7 +135,10 @@ programa ::= PROGRAM IDENTIFICADOR encabezado
             END;
 
 // ------------------------------ Encabezado ---------------------------------------------------------------------------
-encabezado ::= declarar_datos encabezado | declarar_funciones encabezado | declarar_procedimientos encabezado | epsilon;
+encabezado ::= declarar_datos encabezado
+             | declarar_funciones encabezado
+             | declarar_procedimientos encabezado
+             | epsilon;
 
 declarar_datos ::= VAR variables
                 | CONST constantes;
@@ -149,7 +152,7 @@ constantes ::= IDENTIFICADOR OPERADOR_ASIGNACION tokens OPERADOR_PUNTO_Y_COMA
 declarar_funciones ::= FUNCTION IDENTIFICADOR OPERADOR_PARENTESIS_ABRIR parametros_entrada OPERADOR_PARENTESIS_CERRAR OPERADOR_DOS_PUNTOS tipos
                     BEGIN
                     cuerpo
-                    // asignar_valores
+                    asignar_valores
                     END;
 
 declarar_procedimientos ::= PROCEDURE IDENTIFICADOR OPERADOR_PARENTESIS_ABRIR parametros_entrada OPERADOR_PARENTESIS_CERRAR
@@ -164,26 +167,16 @@ retorno_funcion ::= IDENTIFICADOR OPERADOR_ASIGNACION expr_aritmeticas; // seria
 
 // ------------------------------ Cuerpo -------------------------------------------------------------------------------
 
-cuerpo ::= asignar_valores cuerpo
-         | declarar_datos cuerpo
-         | expr_read_write cuerpo
-         | estruc_de_control cuerpo
-         | llamar_func_o_proc OPERADOR_PUNTO_Y_COMA cuerpo
-         | epsilon
-         ;
+cuerpo ::= cuerpo asignar_valores
+         | cuerpo declarar_datos
+         | cuerpo expr_read_write
+         | cuerpo estruc_de_control
+         | cuerpo llamar_func_o_proc OPERADOR_PUNTO_Y_COMA
+         | epsilon;
 
-/* Original, sin factoriar
-asignar_valores ::= IDENTIFICADOR OPERADOR_ASIGNACION valores OPERADOR_PUNTO_Y_COMA                 // a := 12
-                  | IDENTIFICADOR OPERADOR_ASIGNACION expr_aritmeticas OPERADOR_PUNTO_Y_COMA        // a := b + 3 - (4/d)..., f(...) + 12 + g(...) ...
-                  | IDENTIFICADOR OPERADOR_ASIGNACION llamar_func_o_proc OPERADOR_PUNTO_Y_COMA      // f(...)
-                  | IDENTIFICADOR ___operadores_aritmeticos valores OPERADOR_PUNTO_Y_COMA           // a += 12;
-                  | IDENTIFICADOR ___operadores_aritmeticos expr_aritmeticas OPERADOR_PUNTO_Y_COMA  // a += 12 + b _ ...;
-                  | IDENTIFICADOR __operadores_aritmeticos OPERADOR_PUNTO_Y_COMA                    // a++, b--;
-                  ;
-*/
 asignar_valores ::= IDENTIFICADOR _asignar_valores OPERADOR_PUNTO_Y_COMA;
 
-_asignar_valores ::= OPERADOR_ASIGNACION expr_aritmeticas
+_asignar_valores ::= OPERADOR_ASIGNACION expr_aritmeticas // a := 12, a := b() + 3 - (4/d)..., f(...)
                    | ___operadores_aritmeticos expr_aritmeticas // a += 12
                    | __operadores_aritmeticos; // a++, a--
 
@@ -230,10 +223,8 @@ sentencia_for ::= FOR IDENTIFICADOR OPERADOR_ASIGNACION tokens TO tokens DO
 
 // ------------------------------ Expresiones --------------------------------------------------------------------------
 
-expr_aritmeticas ::= tokens
-                    | llamar_func_o_proc
-                    | tokens _operadores_aritmeticos expr_aritmeticas
-                    | llamar_func_o_proc _operadores_aritmeticos expr_aritmeticas
+expr_aritmeticas ::= tokens _expr_aritmeticas
+                    | llamar_func_o_proc _expr_aritmeticas
                     | OPERADOR_PARENTESIS_ABRIR expr_aritmeticas OPERADOR_PARENTESIS_CERRAR _expr_aritmeticas;
 
 _expr_aritmeticas ::= _operadores_aritmeticos expr_aritmeticas | epsilon;
