@@ -1,39 +1,84 @@
 program miPrograma
 
-    var miVar1: boolean
-    var miVar2, miVar3: int
-    var miVar4, miVar5, miVar6: real
+    var miVar1: boolean;
+    var miVar2, miVar3: int;
+    var miVar4, miVar5, miVar6: real;
 
-    const miVar6: string
-    const miVar7, miVar8: char
+    const miVar6 = "Jose";
+    const miVar7, miVar8 = 1997;
 
     function miFuncion (int pEntrada1, string pEntrada2): boolean
     begin
 
-        var miVarC1, miVarC2: boolean
-        const variableConstante: int
+        miVar6 += " Navarro";
 
-        // falta el cuerpo
+        a := 12;
+        a := b + c;
+        a := b + f(12, 45) + a;
+        a := g(p, 34) + h(); 
+        a := (w * 12) - q();
+        a := w * (30 + (miVar7 MOD f(1997)));
         
-        resultado := "Soy el dueño de tu love <3"
+        // Arreglar el return!
+        resultado := "Soy el dueño de tu love <3";
 
     end
 
     procedure miProcedimiento (real pEntrada1)
     begin
 
-        var miVarC1, miVarC2: boolean
+        a := 1 + miVar7;
+
+        if a >= 30 then
+
+        else
+        end
 
     end
 
     begin
         {*
-            Cuerpo
+            Main
         *}
+
+        read; read "C:\Users\user\Documents\documento.txt";
+        write a miVar7;
+
+        var bandera: boolean;
 
         if var1 <> var2 or (var1 >= var3) then
         else
-            if bandera <> true then
+            if not bandera then
+            end
+        end
+
+        for i := false to true do
+        begin
+            var contador: int;
+            contador := 10;
+
+            if i = contador then
+                bandera := true;
+            end
+
+            i++;
+        end
+
+        var prueba_1, prueba_2: real;
+        prueba_1 := 0; prueba_2 := 20;
+
+        controlarBandera(false);
+
+        while prueba_1 < prueba_2 do
+        begin
+
+            if (prueba_1 <> 2) or (prueba_1 <> prueba_2) then
+                prueba_1++;
+            else
+                prueba_2--;
+            end
+
+            prueba_1++;
         end
 
     end

@@ -67,6 +67,8 @@ public class Main extends Application implements Cloneable  {
 
     private static final String[] KEYWORDS = arrayToLower(sym.terminalNames);
 
+
+
     @Override
     public void start(Stage primaryStage) throws Exception
     {
