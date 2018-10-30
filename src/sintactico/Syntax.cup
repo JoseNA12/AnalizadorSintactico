@@ -4,6 +4,7 @@ import java_cup.runtime.*;
 import java.util.List;
 import java.util.ArrayList;
 import java.io.InputStream;
+import lexico.Main;
 // http://www2.cs.tum.edu/projects/cup/docs.php
 // https://www.youtube.com/watch?v=AQkd5AwjV1E
 // http://themfgeek.blogspot.com/2012/10/sintaxis-cup.html
@@ -113,13 +114,15 @@ terminal ERROR_IDENTIFICADOR,
 
 non terminal inicio, programa, encabezado, cuerpo, _cuerpo, variables, constantes, tipos, declarar_datos,
             declarar_funciones, declarar_procedimientos, asignar_valores, _asignar_valores, parametros_entrada,
-            retorno_funcion, expr_aritmeticas, _expr_aritmeticas,
-            operadores_aritmeticos, _operadores_aritmeticos, __operadores_aritmeticos,
-            ___operadores_aritmeticos, estruc_de_control, parametros_llamada_func, _parametros_llamada_func, llamar_func_o_proc,
-            expr_read_write, expr_read, _expr_read, expr_write, _expr_write,
+            _parametros_entrada, __parametros_entrada, retorno_funcion, expr_aritmeticas, _expr_aritmeticas,
+            operadores_aritmeticos, _operadores_aritmeticos, __operadores_aritmeticos, ___operadores_aritmeticos,
+            estruc_de_control, parametros_llamada_func, _parametros_llamada_func, llamar_func_o_proc, expr_read_write,
+            expr_read, _expr_read, expr_write, _expr_write,
 
             sentencia_if, _sentencia_if, expr_booleanas, sentencia_else, tokens, _tokens,
             _expr_booleanas, sentencia_while, sentencia_for, operadores_booleanos, tokens_boolean;
+
+non terminal Er_retorno_funcion;
 
 non terminal Symbol epsilon;
 
@@ -127,7 +130,7 @@ start with inicio;
 
 // ------------------------------ Start --------------------------------------------------------------------------------
 
-inicio ::= programa {: System.out.println("Correcto!"); :};
+inicio ::= programa {: Main.miInstancia.agregarErrorSintactico("Correcto!"); :};
 
 programa ::= PROGRAM IDENTIFICADOR encabezado
             BEGIN
@@ -152,7 +155,8 @@ constantes ::= IDENTIFICADOR OPERADOR_ASIGNACION tokens OPERADOR_PUNTO_Y_COMA
 declarar_funciones ::= FUNCTION IDENTIFICADOR OPERADOR_PARENTESIS_ABRIR parametros_entrada OPERADOR_PARENTESIS_CERRAR OPERADOR_DOS_PUNTOS tipos
                     BEGIN
                     cuerpo
-                    asignar_valores
+                    //asignar_valores
+                    retorno_funcion
                     END;
 
 declarar_procedimientos ::= PROCEDURE IDENTIFICADOR OPERADOR_PARENTESIS_ABRIR parametros_entrada OPERADOR_PARENTESIS_CERRAR
@@ -160,10 +164,13 @@ declarar_procedimientos ::= PROCEDURE IDENTIFICADOR OPERADOR_PARENTESIS_ABRIR pa
                     cuerpo
                     END;
 
-parametros_entrada ::= tipos IDENTIFICADOR
-                    | tipos IDENTIFICADOR OPERADOR_COMA parametros_entrada;
+retorno_funcion ::= IDENTIFICADOR OPERADOR_ASIGNACION expr_aritmeticas;
 
-retorno_funcion ::= IDENTIFICADOR OPERADOR_ASIGNACION expr_aritmeticas; // seria bueno agregar expr_aritmeticas
+parametros_entrada ::= _parametros_entrada | epsilon;
+
+_parametros_entrada ::= tipos IDENTIFICADOR __parametros_entrada;
+
+__parametros_entrada ::= OPERADOR_COMA _parametros_entrada | epsilon;
 
 // ------------------------------ Cuerpo -------------------------------------------------------------------------------
 
@@ -184,8 +191,7 @@ llamar_func_o_proc ::= IDENTIFICADOR OPERADOR_PARENTESIS_ABRIR parametros_llamad
 
 parametros_llamada_func ::= tokens
                         | tokens OPERADOR_COMA _parametros_llamada_func
-                        | epsilon
-                        ;
+                        | epsilon;
 
 _parametros_llamada_func ::= tokens OPERADOR_COMA _parametros_llamada_func | tokens;
 
@@ -259,3 +265,7 @@ tokens_boolean ::= TRUE | FALSE | NOT IDENTIFICADOR | NOT TRUE | NOT FALSE;
 tipos ::= INT | SHORTINT | LONGINT | REAL | STRING | CHAR | BOOLEAN;
 
 epsilon ::= {: RESULT = new Symbol(-1); :};
+
+// ------------------------------ Errores -----------------------------------------------------------------------------_
+
+Er_retorno_funcion ::= asignar_valores | epsilon {:  :};

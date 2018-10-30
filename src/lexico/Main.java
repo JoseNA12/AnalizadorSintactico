@@ -46,6 +46,7 @@ import sintactico.*;
 
 public class Main extends Application implements Cloneable  {
 
+    public static Main miInstancia;
     @FXML public TextArea ta_insertar_texto_id;
     @FXML public TableView<ItemTablaTokens> tv_tokens_encontrados_id;
     @FXML public TableColumn<ItemTablaTokens, String> tc_token_id, tc_tipo_token_id, tc_linea_token_id;
@@ -120,7 +121,7 @@ public class Main extends Application implements Cloneable  {
 
     public void probarLexerFile()
     {
-        reestablecerComponentes();
+        reestablecerComponentes(); agregarErrorSintactico("");
 
         File fichero = new File ("fichero.txt");
         PrintWriter writer;
@@ -199,6 +200,8 @@ public class Main extends Application implements Cloneable  {
     void initialize(){
         initTablesViews();
         initCodeArea();
+
+        miInstancia = this;
     }
 
     private void initCodeArea()
@@ -261,16 +264,19 @@ public class Main extends Application implements Cloneable  {
     private void agregarLineaToken(String token, String tipoToken, int numeroLinea){
         LineaToken linea = null;
         boolean existe = false;
-        for(int i=0; i<tokenslist.size(); i++){
+        for(int i=0; i < tokenslist.size(); i++)
+        {
             linea = tokenslist.get(i);
-            if(linea.token.equalsIgnoreCase(token)){
+            if(linea.token.equalsIgnoreCase(token))
+            {
                 existe = true;
                 break;
             }
         }
         if(existe){
             linea.agregarLinea(numeroLinea);
-        }else{
+        }else
+        {
             Map<Integer, Integer> lineasAparicion = new HashMap<Integer, Integer>();
             lineasAparicion.put(numeroLinea, 1);
             tokenslist.add(new LineaToken(token, tipoToken, lineasAparicion));
@@ -284,16 +290,20 @@ public class Main extends Application implements Cloneable  {
     private void agregarElementosTablaTokens()
     {
         String lineas;
-        for(LineaToken l : tokenslist){
+        for(LineaToken l : tokenslist)
+        {
             lineas = "";
             Set<Integer> clavesLineas = l.lineasAparicion.keySet();     //retorna el set de claves del map
-            for (Iterator<Integer> it = clavesLineas.iterator(); it.hasNext(); ) {
+            for (Iterator<Integer> it = clavesLineas.iterator(); it.hasNext();)
+            {
                 Integer key = it.next();
                 int cantidadApariciones = l.lineasAparicion.get(key);
 
-                if(cantidadApariciones > 1){
+                if(cantidadApariciones > 1)
+                {
                     lineas += (key + 1) + "(" + l.lineasAparicion.get(key) + "), ";
-                }else{
+                }else
+                    {
                     lineas += (key + 1) + ", ";
                 }
             }
@@ -425,18 +435,18 @@ public class Main extends Application implements Cloneable  {
         return list.toArray(new String[list.size()]);
     }
 
-    private static String cleanTextContent(String text)
+    public void agregarErrorSintactico(String pError)
     {
-        // strips off all non-ASCII characters
-        text = text.replaceAll("[^\\x00-\\x7F]", "");
+        String textoAnterior = ta_errores_sintacticos_id.getText();
 
-        // erases all the ASCII control characters
-        text = text.replaceAll("[\\p{Cntrl}&&[^\r\n\t]]", "");
-
-        // removes non-printable characters from Unicode
-        text = text.replaceAll("\\p{C}", "");
-
-        return text.trim();
+        if (textoAnterior.trim().equals(""))
+        {
+            ta_errores_sintacticos_id.setText(pError);
+        }
+        else
+        {
+            ta_errores_sintacticos_id.setText(textoAnterior + "\n" + pError);
+        }
     }
 
     // ============================ CodeArea ============================ \\
