@@ -63,9 +63,11 @@ parser code
         }*/
     }
 
-    public void RegistrarErrorPantalla(String pMsg)
+    public void RegistrarErrorPantalla(String pMsg, int linea, int columuna)
     {
         Main.miInstancia.agregarErrorSintactico(pMsg);
+
+        System.out.println(linea);
     }
 :}
 
@@ -130,8 +132,8 @@ terminal ERROR_IDENTIFICADOR,
 // |-------------------- NO TERMINALES --------------------| //
 
 non terminal Symbol inicio, programa, encabezado, cuerpo_1, cuerpo_2, _cuerpo_2, variables, _variables, __variables, constantes,
-            _constantes,
-            tipos, declarar_datos,
+            _constantes, __constantes,
+            tipos, declarar_datos, declarar_datos_1,
             declarar_funciones, declarar_procedimientos, asignar_valores, _asignar_valores, parametros_entrada,
             _parametros_entrada, __parametros_entrada, retorno_funcion, expr_aritmeticas, _expr_aritmeticas,
             operadores_aritmeticos, _operadores_aritmeticos, __operadores_aritmeticos, ___operadores_aritmeticos,
@@ -146,12 +148,11 @@ non terminal Er_retorno_funcion;
 
 non terminal Symbol epsilon;
 
-
 start with inicio;
 
 // ------------------------------ Start --------------------------------------------------------------------------------
 
-inicio ::= programa {: RegistrarErrorPantalla("Correcto!"); :};
+inicio ::= programa;
 
 programa ::= PROGRAM IDENTIFICADOR encabezado
             BEGIN
@@ -159,7 +160,8 @@ programa ::= PROGRAM IDENTIFICADOR encabezado
             END;
 
 // ------------------------------ Encabezado ---------------------------------------------------------------------------
-encabezado ::= declarar_datos encabezado {: RegistrarErrorPantalla("Encabezado!"); :}
+encabezado ::= declarar_datos encabezado {: RegistrarErrorPantalla("Encabezado!", parser.cur_token.left, parser.cur_token.right);
+                                            System.out.println(parser.cur_token.value.toString()); :}
              | declarar_funciones encabezado
              | declarar_procedimientos encabezado
              | epsilon;
@@ -169,9 +171,11 @@ declarar_datos ::= VAR variables
 
 variables ::= IDENTIFICADOR _variables OPERADOR_DOS_PUNTOS tipos OPERADOR_PUNTO_Y_COMA __variables;
 
-_variables ::= OPERADOR_COMA IDENTIFICADOR _variables | epsilon;
+_variables ::= OPERADOR_COMA IDENTIFICADOR _variables | epsilon
+            ;
 
-__variables ::= variables | epsilon;
+__variables ::= variables | epsilon
+             ;
 
 constantes ::= IDENTIFICADOR OPERADOR_ASIGNACION_2 tokens OPERADOR_PUNTO_Y_COMA _constantes;
 
@@ -180,7 +184,7 @@ _constantes ::= constantes | epsilon;
 declarar_funciones ::= FUNCTION IDENTIFICADOR OPERADOR_PARENTESIS_ABRIR parametros_entrada OPERADOR_PARENTESIS_CERRAR OPERADOR_DOS_PUNTOS tipos
                     BEGIN
                     cuerpo_2
-                    //retorno_funcion
+                    // retorno_funcion
                     END;
 
 declarar_procedimientos ::= PROCEDURE IDENTIFICADOR OPERADOR_PARENTESIS_ABRIR parametros_entrada OPERADOR_PARENTESIS_CERRAR
@@ -205,9 +209,13 @@ cuerpo_1 ::= asignar_valores cuerpo_1
          | epsilon
          ;
 
-cuerpo_2 ::= cuerpo_1 | declarar_datos cuerpo_1;
-
-_cuerpo_2 ::= cuerpo_2 ;
+cuerpo_2 ::= asignar_valores cuerpo_2
+          | expr_read_write cuerpo_2
+          | estruc_de_control cuerpo_2
+          | llamar_func_o_proc OPERADOR_PUNTO_Y_COMA cuerpo_2
+          //| declarar_datos cuerpo_2
+          | epsilon
+          ;
 
 asignar_valores ::= IDENTIFICADOR _asignar_valores OPERADOR_PUNTO_Y_COMA;
 

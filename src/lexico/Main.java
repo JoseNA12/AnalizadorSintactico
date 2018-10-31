@@ -191,6 +191,8 @@ public class Main extends Application implements Cloneable  {
 
         try {
             syntax.parse();
+
+
         } catch (Exception e) {
             e.printStackTrace();
         }
