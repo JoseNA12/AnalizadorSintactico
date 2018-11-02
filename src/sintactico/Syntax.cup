@@ -123,7 +123,6 @@ terminal TRUE, FALSE;
 
 terminal INT, LONGINT, SHORTINT, CHAR, STRING, BOOLEAN, REAL;
 
-
 terminal ERROR_IDENTIFICADOR,
         ERROR_LITERAL,
         ERROR_PALABRA_RESERVADA,
@@ -131,22 +130,26 @@ terminal ERROR_IDENTIFICADOR,
 
 // |-------------------- NO TERMINALES --------------------| //
 
-non terminal Symbol inicio, programa, encabezado, cuerpo_1, cuerpo_2, _cuerpo_2, variables, _variables, __variables, constantes,
-            _constantes, __constantes,
-            tipos, declarar_datos, declarar_datos_1,
+non terminal Symbol inicio, programa, encabezado, cuerpo, _cuerpo, variables, variables_OR, _variables, __variables,
+            ___variables, constantes,
+            _constantes, __constantes, ___constantes,
+            tipos, declarar_datos, declarar_func_proc,
             declarar_funciones, declarar_procedimientos, asignar_valores, _asignar_valores, parametros_entrada,
             _parametros_entrada, __parametros_entrada, retorno_funcion, expr_aritmeticas, _expr_aritmeticas,
             operadores_aritmeticos, _operadores_aritmeticos, __operadores_aritmeticos, ___operadores_aritmeticos,
             estruc_de_control, parametros_llamada_func, _parametros_llamada_func, llamar_func_o_proc, expr_read_write,
             expr_read, _expr_read, expr_write, _expr_write,
 
+            asignar_valores_, _prueba,
+
             sentencia_if, _sentencia_if, expr_booleanas, sentencia_else, tokens, _tokens,
-            _expr_booleanas, sentencia_while, sentencia_for, operadores_booleanos, operadores_booleanos_1, _operadores_booleanos_2,
-            tokens_boolean;
+            _expr_booleanas, sentencia_while, sentencia_for, operadores_booleanos, operadores_booleanos_1,
+            _operadores_booleanos_2, tokens_boolean;
 
 non terminal Er_retorno_funcion;
 
 non terminal Symbol epsilon;
+
 
 start with inicio;
 
@@ -156,43 +159,95 @@ inicio ::= programa;
 
 programa ::= PROGRAM IDENTIFICADOR encabezado
             BEGIN
-            cuerpo_1
-            END;
-
-// ------------------------------ Encabezado ---------------------------------------------------------------------------
-encabezado ::= declarar_datos encabezado {: RegistrarErrorPantalla("Encabezado!", parser.cur_token.left, parser.cur_token.right);
-                                            System.out.println(parser.cur_token.value.toString()); :}
-             | declarar_funciones encabezado
-             | declarar_procedimientos encabezado
-             | epsilon;
-
-declarar_datos ::= VAR variables
-                | CONST constantes;
-
-variables ::= IDENTIFICADOR _variables OPERADOR_DOS_PUNTOS tipos OPERADOR_PUNTO_Y_COMA __variables;
-
-_variables ::= OPERADOR_COMA IDENTIFICADOR _variables | epsilon
+            _cuerpo
+            END
             ;
 
-__variables ::= variables | epsilon
-             ;
+// ------------------------------ Encabezado ---------------------------------------------------------------------------
+encabezado ::= declarar_datos declarar_func_proc {: RegistrarErrorPantalla("Correcto!", parser.cur_token.left, parser.cur_token.right);
+                                                    System.out.println(parser.cur_token.value.toString()); :}
+                                                                                                  ;
+declarar_datos ::= variables constantes;
 
-constantes ::= IDENTIFICADOR OPERADOR_ASIGNACION_2 tokens OPERADOR_PUNTO_Y_COMA _constantes;
 
-_constantes ::= constantes | epsilon;
+variables ::= VAR _variables | epsilon;
+
+_variables ::= IDENTIFICADOR __variables;
+
+__variables ::= ___variables | OPERADOR_COMA _variables;
+
+___variables ::= OPERADOR_DOS_PUNTOS tipos OPERADOR_PUNTO_Y_COMA
+                | OPERADOR_DOS_PUNTOS tipos OPERADOR_PUNTO_Y_COMA _variables;
+
+
+constantes ::= CONST _constantes | epsilon;
+
+_constantes ::= __constantes | __constantes _constantes;
+
+__constantes ::= IDENTIFICADOR OPERADOR_ASIGNACION_2 tokens OPERADOR_PUNTO_Y_COMA;
+
+/*
+variables ::= VAR _variables | epsilon;
+_variables ::= IDENTIFICADOR __variables OPERADOR_DOS_PUNTOS tipos OPERADOR_PUNTO_Y_COMA ___variables;
+__variables ::= OPERADOR_COMA IDENTIFICADOR __variables | epsilon;
+___variables ::= _variables | epsilon;
+
+constantes ::= CONST _constantes | epsilon;
+_constantes ::= IDENTIFICADOR OPERADOR_ASIGNACION_2 tokens OPERADOR_PUNTO_Y_COMA __constantes;
+__constantes ::= _constantes | epsilon;
+*/
+
+
+/*
+variables ::= VAR _variables OPERADOR_PUNTO_Y_COMA {: System.out.println("Bloque de variables"); :}
+            | epsilon
+            ;
+
+_variables ::= __variables OPERADOR_COMA IDENTIFICADOR OPERADOR_DOS_PUNTOS tipos OPERADOR_PUNTO_Y_COMA
+                 | _variables IDENTIFICADOR OPERADOR_DOS_PUNTOS tipos
+                 | IDENTIFICADOR OPERADOR_DOS_PUNTOS tipos
+                 ;
+
+__variables ::= __variables OPERADOR_COMA IDENTIFICADOR
+                 |  IDENTIFICADOR
+                 ;
+
+constantes ::= CONST _constantes OPERADOR_PUNTO_Y_COMA {: System.out.println("Bloque constantes"); :}
+              | epsilon
+              ;
+
+_constantes ::= _constantes tokens
+                   | tokens
+                   ;
+
+*/
+
+
+
+
+
+declarar_func_proc ::= declarar_func_proc declarar_funciones
+                     |declarar_func_proc declarar_procedimientos
+                     | epsilon
+                     ;
 
 declarar_funciones ::= FUNCTION IDENTIFICADOR OPERADOR_PARENTESIS_ABRIR parametros_entrada OPERADOR_PARENTESIS_CERRAR OPERADOR_DOS_PUNTOS tipos
-                    BEGIN
-                    cuerpo_2
-                    // retorno_funcion
-                    END;
+                    BEGIN declarar_datos cuerpo asignar_valores_ END
+                    |
+                    FUNCTION IDENTIFICADOR OPERADOR_PARENTESIS_ABRIR parametros_entrada OPERADOR_PARENTESIS_CERRAR OPERADOR_DOS_PUNTOS tipos
+                    BEGIN declarar_datos /* sin cuerpo */ asignar_valores_ END
+                    ;
 
 declarar_procedimientos ::= PROCEDURE IDENTIFICADOR OPERADOR_PARENTESIS_ABRIR parametros_entrada OPERADOR_PARENTESIS_CERRAR
-                    BEGIN
-                    cuerpo_2
-                    END;
+                    BEGIN declarar_datos cuerpo END
+                    |
+                    PROCEDURE IDENTIFICADOR OPERADOR_PARENTESIS_ABRIR parametros_entrada OPERADOR_PARENTESIS_CERRAR
+                    BEGIN declarar_datos /* sin cuerpo */ END
+                    ;
 
-retorno_funcion ::= IDENTIFICADOR OPERADOR_ASIGNACION_1 expr_aritmeticas OPERADOR_PUNTO_Y_COMA;
+
+retorno_funcion ::= IDENTIFICADOR OPERADOR_ASIGNACION_1 expr_aritmeticas OPERADOR_PUNTO_Y_COMA
+                    {: RegistrarErrorPantalla("retorno_funcion", 0, 0); :};
 
 parametros_entrada ::= _parametros_entrada | epsilon;
 
@@ -202,20 +257,20 @@ __parametros_entrada ::= OPERADOR_COMA _parametros_entrada | epsilon;
 
 // ------------------------------ Cuerpo -------------------------------------------------------------------------------
 
-cuerpo_1 ::= asignar_valores cuerpo_1
-         | expr_read_write cuerpo_1
-         | estruc_de_control cuerpo_1
-         | llamar_func_o_proc OPERADOR_PUNTO_Y_COMA cuerpo_1
-         | epsilon
+cuerpo ::= cuerpo asignar_valores_ {: RegistrarErrorPantalla("asignar_valores", 0, 0); :}
+         | asignar_valores_
+         | cuerpo expr_read_write  {: RegistrarErrorPantalla("expr_read_write", 0, 0); :}
+         | expr_read_write
+         | cuerpo estruc_de_control  {: RegistrarErrorPantalla("estruc_de_control", 0, 0); :}
+         | estruc_de_control
+         | cuerpo llamar_func_o_proc OPERADOR_PUNTO_Y_COMA  {: RegistrarErrorPantalla("llamar_func_o_proc", 0, 0); :}
+         | llamar_func_o_proc
+         //| epsilon {: RegistrarErrorPantalla("epsilon", 0, 0); :}
          ;
 
-cuerpo_2 ::= asignar_valores cuerpo_2
-          | expr_read_write cuerpo_2
-          | estruc_de_control cuerpo_2
-          | llamar_func_o_proc OPERADOR_PUNTO_Y_COMA cuerpo_2
-          //| declarar_datos cuerpo_2
-          | epsilon
-          ;
+_cuerpo ::= cuerpo | epsilon;
+
+asignar_valores_ ::= asignar_valores;
 
 asignar_valores ::= IDENTIFICADOR _asignar_valores OPERADOR_PUNTO_Y_COMA;
 
@@ -246,21 +301,21 @@ _expr_write ::= OPERADOR_COMA _tokens _expr_write | epsilon;
 estruc_de_control ::= sentencia_if | sentencia_while | sentencia_for;
 
 sentencia_if ::= IF expr_booleanas THEN
-                 cuerpo_1 _sentencia_if
+                 _cuerpo _sentencia_if
                  END;
 
 _sentencia_if ::= sentencia_else | epsilon;
 
-sentencia_else ::= ELSE cuerpo_1;
+sentencia_else ::= ELSE _cuerpo;
 
 sentencia_while ::= WHILE expr_booleanas DO
                     BEGIN
-                    cuerpo_1
+                    _cuerpo
                     END;
 
 sentencia_for ::= FOR IDENTIFICADOR OPERADOR_ASIGNACION_1 tokens TO tokens DO
                   BEGIN
-                  cuerpo_1
+                  _cuerpo
                   END;
 
 // ------------------------------ Expresiones --------------------------------------------------------------------------
