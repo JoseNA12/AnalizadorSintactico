@@ -133,11 +133,13 @@ terminal ERROR_IDENTIFICADOR,
 non terminal Symbol inicio, programa, encabezado, cuerpo, _cuerpo, variables, variables_OR, _variables, __variables,
             ___variables, constantes,
             _constantes, __constantes, ___constantes,
-            tipos, declarar_datos, declarar_func_proc,
-            declarar_funciones, declarar_procedimientos, asignar_valores, _asignar_valores, parametros_entrada,
+            tipos, declarar_datos, declarar_func_proc, _declarar_func_proc, instrucciones,
+            declarar_funciones, declarar_procedimientos, asignar_valores, asignar_valores_1, asignar_valores_2, _asignar_valores_1, __asignar_valores,
+            parametros_entrada,
             _parametros_entrada, __parametros_entrada, retorno_funcion, expr_aritmeticas, _expr_aritmeticas,
             operadores_aritmeticos, _operadores_aritmeticos, __operadores_aritmeticos, ___operadores_aritmeticos,
-            estruc_de_control, parametros_llamada_func, _parametros_llamada_func, llamar_func_o_proc, expr_read_write,
+            estruc_de_control, parametros_llamada_func, _parametros_llamada_func, llamar_func_o_proc,
+            expr_read_write,
             expr_read, _expr_read, expr_write, _expr_write,
 
             asignar_valores_, _prueba,
@@ -149,6 +151,17 @@ non terminal Symbol inicio, programa, encabezado, cuerpo, _cuerpo, variables, va
 non terminal Er_retorno_funcion;
 
 non terminal Symbol epsilon;
+
+//precedence right OPERADOR_ASIGNACION_ADICION;
+//precedence left IDENTIFICADOR;
+
+//precedence left OPERADOR_ADICION;
+//precedence left OPERADOR_MULTIPLICACION;
+//precedence left OPERADOR_SUSTRACCION, OPERADOR_PARENTESIS_ABRIR, OPERADOR_PARENTESIS_CERRAR;
+
+//precedence left OPERADOR_COMA;
+//precedence left OPERADOR_PUNTO_Y_COMA;
+//precedence left OPERADOR_ASIGNACION_1;
 
 
 start with inicio;
@@ -167,8 +180,7 @@ programa ::= PROGRAM IDENTIFICADOR encabezado
 encabezado ::= declarar_datos declarar_func_proc {: RegistrarErrorPantalla("Correcto!", parser.cur_token.left, parser.cur_token.right);
                                                     System.out.println(parser.cur_token.value.toString()); :}
                                                                                                   ;
-declarar_datos ::= variables constantes;
-
+declarar_datos ::= constantes variables;
 
 variables ::= VAR _variables | epsilon;
 
@@ -179,14 +191,13 @@ __variables ::= ___variables | OPERADOR_COMA _variables;
 ___variables ::= OPERADOR_DOS_PUNTOS tipos OPERADOR_PUNTO_Y_COMA
                 | OPERADOR_DOS_PUNTOS tipos OPERADOR_PUNTO_Y_COMA _variables;
 
-
 constantes ::= CONST _constantes | epsilon;
 
-_constantes ::= __constantes | __constantes _constantes;
+_constantes ::= IDENTIFICADOR OPERADOR_ASIGNACION_2 tokens OPERADOR_PUNTO_Y_COMA __constantes;
 
-__constantes ::= IDENTIFICADOR OPERADOR_ASIGNACION_2 tokens OPERADOR_PUNTO_Y_COMA;
+__constantes ::= _constantes | epsilon;
 
-/*
+/* MIOS
 variables ::= VAR _variables | epsilon;
 _variables ::= IDENTIFICADOR __variables OPERADOR_DOS_PUNTOS tipos OPERADOR_PUNTO_Y_COMA ___variables;
 __variables ::= OPERADOR_COMA IDENTIFICADOR __variables | epsilon;
@@ -197,45 +208,19 @@ _constantes ::= IDENTIFICADOR OPERADOR_ASIGNACION_2 tokens OPERADOR_PUNTO_Y_COMA
 __constantes ::= _constantes | epsilon;
 */
 
+declarar_func_proc ::= _declarar_func_proc | epsilon;
 
-/*
-variables ::= VAR _variables OPERADOR_PUNTO_Y_COMA {: System.out.println("Bloque de variables"); :}
-            | epsilon
-            ;
-
-_variables ::= __variables OPERADOR_COMA IDENTIFICADOR OPERADOR_DOS_PUNTOS tipos OPERADOR_PUNTO_Y_COMA
-                 | _variables IDENTIFICADOR OPERADOR_DOS_PUNTOS tipos
-                 | IDENTIFICADOR OPERADOR_DOS_PUNTOS tipos
-                 ;
-
-__variables ::= __variables OPERADOR_COMA IDENTIFICADOR
-                 |  IDENTIFICADOR
-                 ;
-
-constantes ::= CONST _constantes OPERADOR_PUNTO_Y_COMA {: System.out.println("Bloque constantes"); :}
-              | epsilon
-              ;
-
-_constantes ::= _constantes tokens
-                   | tokens
-                   ;
-
-*/
-
-
-
-
-
-declarar_func_proc ::= declarar_func_proc declarar_funciones
-                     |declarar_func_proc declarar_procedimientos
-                     | epsilon
+_declarar_func_proc ::= declarar_funciones _declarar_func_proc
+                     | declarar_procedimientos _declarar_func_proc
+                     | declarar_funciones
+                     | declarar_procedimientos
                      ;
 
 declarar_funciones ::= FUNCTION IDENTIFICADOR OPERADOR_PARENTESIS_ABRIR parametros_entrada OPERADOR_PARENTESIS_CERRAR OPERADOR_DOS_PUNTOS tipos
-                    BEGIN declarar_datos cuerpo asignar_valores_ END
+                    BEGIN declarar_datos cuerpo asignar_valores_1 END
                     |
                     FUNCTION IDENTIFICADOR OPERADOR_PARENTESIS_ABRIR parametros_entrada OPERADOR_PARENTESIS_CERRAR OPERADOR_DOS_PUNTOS tipos
-                    BEGIN declarar_datos /* sin cuerpo */ asignar_valores_ END
+                    BEGIN declarar_datos /* sin cuerpo */ asignar_valores_1 END
                     ;
 
 declarar_procedimientos ::= PROCEDURE IDENTIFICADOR OPERADOR_PARENTESIS_ABRIR parametros_entrada OPERADOR_PARENTESIS_CERRAR
@@ -245,9 +230,7 @@ declarar_procedimientos ::= PROCEDURE IDENTIFICADOR OPERADOR_PARENTESIS_ABRIR pa
                     BEGIN declarar_datos /* sin cuerpo */ END
                     ;
 
-
-retorno_funcion ::= IDENTIFICADOR OPERADOR_ASIGNACION_1 expr_aritmeticas OPERADOR_PUNTO_Y_COMA
-                    {: RegistrarErrorPantalla("retorno_funcion", 0, 0); :};
+retorno_funcion ::= IDENTIFICADOR OPERADOR_ASIGNACION_1 expr_aritmeticas OPERADOR_PUNTO_Y_COMA;
 
 parametros_entrada ::= _parametros_entrada | epsilon;
 
@@ -257,26 +240,24 @@ __parametros_entrada ::= OPERADOR_COMA _parametros_entrada | epsilon;
 
 // ------------------------------ Cuerpo -------------------------------------------------------------------------------
 
-cuerpo ::= cuerpo asignar_valores_ {: RegistrarErrorPantalla("asignar_valores", 0, 0); :}
-         | asignar_valores_
-         | cuerpo expr_read_write  {: RegistrarErrorPantalla("expr_read_write", 0, 0); :}
-         | expr_read_write
-         | cuerpo estruc_de_control  {: RegistrarErrorPantalla("estruc_de_control", 0, 0); :}
+cuerpo ::= cuerpo instrucciones
+         | cuerpo estruc_de_control
+         | instrucciones
          | estruc_de_control
-         | cuerpo llamar_func_o_proc OPERADOR_PUNTO_Y_COMA  {: RegistrarErrorPantalla("llamar_func_o_proc", 0, 0); :}
-         | llamar_func_o_proc
-         //| epsilon {: RegistrarErrorPantalla("epsilon", 0, 0); :}
          ;
 
 _cuerpo ::= cuerpo | epsilon;
 
-asignar_valores_ ::= asignar_valores;
+instrucciones ::= asignar_valores_1
+                | asignar_valores_2 OPERADOR_PUNTO_Y_COMA
+                | expr_read_write
+                | llamar_func_o_proc OPERADOR_PUNTO_Y_COMA
+                ;
 
-asignar_valores ::= IDENTIFICADOR _asignar_valores OPERADOR_PUNTO_Y_COMA;
+asignar_valores_1 ::= IDENTIFICADOR OPERADOR_ASIGNACION_1 expr_aritmeticas OPERADOR_PUNTO_Y_COMA; // a := 12, a := b() + 3 - (4/d)..., f(...)
 
-_asignar_valores ::= OPERADOR_ASIGNACION_1 expr_aritmeticas // a := 12, a := b() + 3 - (4/d)..., f(...)
-                   | ___operadores_aritmeticos expr_aritmeticas // a += 12
-                   | __operadores_aritmeticos; // a++, a--
+asignar_valores_2 ::= IDENTIFICADOR ___operadores_aritmeticos expr_aritmeticas // a += 12
+                    | IDENTIFICADOR __operadores_aritmeticos; // a++, a--
 
 llamar_func_o_proc ::= IDENTIFICADOR OPERADOR_PARENTESIS_ABRIR parametros_llamada_func OPERADOR_PARENTESIS_CERRAR;
 
@@ -286,7 +267,8 @@ parametros_llamada_func ::= tokens
 
 _parametros_llamada_func ::= tokens OPERADOR_COMA _parametros_llamada_func | tokens;
 
-expr_read_write ::= expr_read | expr_write;
+expr_read_write ::= expr_read
+                  | expr_write;
 
 expr_read ::= READ _expr_read OPERADOR_PUNTO_Y_COMA;
 
@@ -298,7 +280,9 @@ _expr_write ::= OPERADOR_COMA _tokens _expr_write | epsilon;
 
 // ------------------------------ Estructuras de Control ---------------------------------------------------------------
 
-estruc_de_control ::= sentencia_if | sentencia_while | sentencia_for;
+estruc_de_control ::= sentencia_if
+                    | sentencia_while
+                    | sentencia_for;
 
 sentencia_if ::= IF expr_booleanas THEN
                  _cuerpo _sentencia_if
