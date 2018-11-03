@@ -217,17 +217,21 @@ _declarar_func_proc ::= declarar_funciones _declarar_func_proc
                      ;
 
 declarar_funciones ::= FUNCTION IDENTIFICADOR OPERADOR_PARENTESIS_ABRIR parametros_entrada OPERADOR_PARENTESIS_CERRAR OPERADOR_DOS_PUNTOS tipos
-                    BEGIN declarar_datos cuerpo asignar_valores_1 END
+                    declarar_datos
+                    BEGIN cuerpo asignar_valores_1 END
                     |
                     FUNCTION IDENTIFICADOR OPERADOR_PARENTESIS_ABRIR parametros_entrada OPERADOR_PARENTESIS_CERRAR OPERADOR_DOS_PUNTOS tipos
-                    BEGIN declarar_datos /* sin cuerpo */ asignar_valores_1 END
+                    declarar_datos
+                    BEGIN /* sin cuerpo */ asignar_valores_1 END
                     ;
 
 declarar_procedimientos ::= PROCEDURE IDENTIFICADOR OPERADOR_PARENTESIS_ABRIR parametros_entrada OPERADOR_PARENTESIS_CERRAR
-                    BEGIN declarar_datos cuerpo END
+                    declarar_datos
+                    BEGIN cuerpo END
                     |
                     PROCEDURE IDENTIFICADOR OPERADOR_PARENTESIS_ABRIR parametros_entrada OPERADOR_PARENTESIS_CERRAR
-                    BEGIN declarar_datos /* sin cuerpo */ END
+                    declarar_datos
+                    BEGIN /* sin cuerpo */ END
                     ;
 
 retorno_funcion ::= IDENTIFICADOR OPERADOR_ASIGNACION_1 expr_aritmeticas OPERADOR_PUNTO_Y_COMA;
