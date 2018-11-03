@@ -1,14 +1,14 @@
 package sintactico;
 
-public enum Errores_Syntax {
+public enum ErrSyntax {
 
-    RETORNO_FUNCION("No se esperaba" );
+    RETORNO_FUNCION("No se esperaba " );
 
     private String descripcion;
     private String numLinea;
     private String numColumna;
 
-    Errores_Syntax(String pDescripcion)
+    ErrSyntax(String pDescripcion)
     {
         this.descripcion = pDescripcion;
     }

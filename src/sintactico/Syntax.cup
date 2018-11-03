@@ -11,6 +11,8 @@ import lexico.Main;
 // https://www.youtube.com/watch?v=bBuWPmDrF5M
 // https://youtu.be/tSaPDOT2I_4?t=1120
 // https://github.com/jflex-de/jflex/blob/master/jflex/examples/cup-java/src/main/cup/java12.cup
+// http://staff.polito.it/silvano.rivoira/HowToWriteYourOwnCompiler.htm
+// https://www.cs.auckland.ac.nz/courses/compsci330s1c/lectures/330ChaptersPDF/Chapt6.pdf
 // Días de trabajo: Octubre: 17, 19, 20, 21
 
 // TODO: QUITAR -> case, repeat y arreglos.
@@ -20,21 +22,27 @@ parser code
     // Metodo al que se llama automaticamente ante algun error sintactico
     public void syntax_error(Symbol s)
     {
-        String lexema = s.value.toString();
-        int fila = s.left + 1;
-        int columna = s.right;
+        try
+        {
+            String lexema = s.value.toString();
+            int fila = s.left + 1;
+            int columna = s.right;
 
-        System.err.println("Error sintactico en la linea: " + fila + " y columna: " + columna + ". No se esperaba el componente: " + lexema);
+            System.err.println("Error sintactico en la linea: " + fila + " y columna: " + columna + ". No se esperaba el componente: " + lexema);
+        }catch(Exception e) {}
     }
 
     // Metodo al que se llama en el momento en que ya no es posible una recuperacion de errores
     public void unrecovered_syntax_error(Symbol s) throws java.lang.Exception
     {
-        String lexema = s.value.toString();
-        int fila = s.left + 1;
-        int columna = s.right;
+        try
+        {
+            String lexema = s.value.toString();
+            int fila = s.left + 1;
+            int columna = s.right;
 
-        System.err.println("Error sintactico inrrecuperable en la linea: " + fila + " y columna: " + columna + ". No se esperaba el componente: " + lexema);
+            System.err.println("Error sintactico inrrecuperable en la linea: " + fila + " y columna: " + columna + ". No se esperaba el componente: " + lexema);
+        }catch(Exception e) {}
     }
 
     public void report_error(String message, Object info)
@@ -52,22 +60,11 @@ parser code
         System.err.println(m);
     }
 
-    public void Prueba()
+    public void ErrorUI(String pMsg, String token, int linea, int columna)
     {
-        /*try
-        {
-            System.out.println(action_obj.parser.parse().left);
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }*/
-    }
+        String msg = "Error en la linea: " + (linea) + ", columna: " + (columna) + ". " + pMsg;
 
-    public void RegistrarErrorPantalla(String pMsg, int linea, int columuna)
-    {
-        Main.miInstancia.agregarErrorSintactico(pMsg);
-
-        System.out.println(linea);
+        Main.miInstancia.agregarErrorSintactico(msg);
     }
 :}
 
@@ -130,39 +127,19 @@ terminal ERROR_IDENTIFICADOR,
 
 // |-------------------- NO TERMINALES --------------------| //
 
-non terminal Symbol inicio, programa, encabezado, cuerpo, _cuerpo, variables, variables_OR, _variables, __variables,
-            ___variables, constantes,
-            _constantes, __constantes, ___constantes,
-            tipos, declarar_datos, declarar_func_proc, _declarar_func_proc, instrucciones,
-            declarar_funciones, declarar_procedimientos, asignar_valores, asignar_valores_1, asignar_valores_2, _asignar_valores_1, __asignar_valores,
-            parametros_entrada,
+non terminal Symbol inicio, programa, encabezado, cuerpo, _cuerpo, variables, _variables, __variables, ___variables,
+            constantes, _constantes, __constantes, tipos, declarar_datos, declarar_func_proc, instrucciones,
+            declarar_funciones, declarar_procedimientos, asignar_valores_1, asignar_valores_2, parametros_entrada,
             _parametros_entrada, __parametros_entrada, retorno_funcion, expr_aritmeticas, _expr_aritmeticas,
             operadores_aritmeticos, _operadores_aritmeticos, __operadores_aritmeticos, ___operadores_aritmeticos,
-            estruc_de_control, parametros_llamada_func, _parametros_llamada_func, llamar_func_o_proc,
-            expr_read_write,
+            estruc_de_control, parametros_llamada_func, _parametros_llamada_func, llamar_func_o_proc, expr_read_write,
             expr_read, _expr_read, expr_write, _expr_write,
-
-            asignar_valores_, _prueba,
 
             sentencia_if, _sentencia_if, expr_booleanas, sentencia_else, tokens, _tokens,
             _expr_booleanas, sentencia_while, sentencia_for, operadores_booleanos, operadores_booleanos_1,
-            _operadores_booleanos_2, tokens_boolean;
-
-non terminal Er_retorno_funcion;
+            tokens_boolean;
 
 non terminal Symbol epsilon;
-
-//precedence right OPERADOR_ASIGNACION_ADICION;
-//precedence left IDENTIFICADOR;
-
-//precedence left OPERADOR_ADICION;
-//precedence left OPERADOR_MULTIPLICACION;
-//precedence left OPERADOR_SUSTRACCION, OPERADOR_PARENTESIS_ABRIR, OPERADOR_PARENTESIS_CERRAR;
-
-//precedence left OPERADOR_COMA;
-//precedence left OPERADOR_PUNTO_Y_COMA;
-//precedence left OPERADOR_ASIGNACION_1;
-
 
 start with inicio;
 
@@ -173,48 +150,26 @@ inicio ::= programa;
 programa ::= PROGRAM IDENTIFICADOR encabezado
             BEGIN
             _cuerpo
-            END
-            ;
+            END;
 
 // ------------------------------ Encabezado ---------------------------------------------------------------------------
-encabezado ::= declarar_datos declarar_func_proc {: RegistrarErrorPantalla("Correcto!", parser.cur_token.left, parser.cur_token.right);
-                                                    System.out.println(parser.cur_token.value.toString()); :}
-                                                                                                  ;
+encabezado ::= declarar_datos declarar_func_proc;
+
 declarar_datos ::= constantes variables;
 
-variables ::= VAR _variables | epsilon;
-
-_variables ::= IDENTIFICADOR __variables;
-
-__variables ::= ___variables | OPERADOR_COMA _variables;
-
-___variables ::= OPERADOR_DOS_PUNTOS tipos OPERADOR_PUNTO_Y_COMA
-                | OPERADOR_DOS_PUNTOS tipos OPERADOR_PUNTO_Y_COMA _variables;
-
 constantes ::= CONST _constantes | epsilon;
-
 _constantes ::= IDENTIFICADOR OPERADOR_ASIGNACION_2 tokens OPERADOR_PUNTO_Y_COMA __constantes;
-
 __constantes ::= _constantes | epsilon;
 
-/* MIOS
 variables ::= VAR _variables | epsilon;
 _variables ::= IDENTIFICADOR __variables OPERADOR_DOS_PUNTOS tipos OPERADOR_PUNTO_Y_COMA ___variables;
 __variables ::= OPERADOR_COMA IDENTIFICADOR __variables | epsilon;
 ___variables ::= _variables | epsilon;
 
-constantes ::= CONST _constantes | epsilon;
-_constantes ::= IDENTIFICADOR OPERADOR_ASIGNACION_2 tokens OPERADOR_PUNTO_Y_COMA __constantes;
-__constantes ::= _constantes | epsilon;
-*/
-
-declarar_func_proc ::= _declarar_func_proc | epsilon;
-
-_declarar_func_proc ::= declarar_funciones _declarar_func_proc
-                     | declarar_procedimientos _declarar_func_proc
-                     | declarar_funciones
-                     | declarar_procedimientos
-                     ;
+declarar_func_proc ::= declarar_funciones declarar_func_proc
+                     | declarar_procedimientos declarar_func_proc
+                     | epsilon
+                     | error END;
 
 declarar_funciones ::= FUNCTION IDENTIFICADOR OPERADOR_PARENTESIS_ABRIR parametros_entrada OPERADOR_PARENTESIS_CERRAR OPERADOR_DOS_PUNTOS tipos
                     declarar_datos
@@ -222,8 +177,7 @@ declarar_funciones ::= FUNCTION IDENTIFICADOR OPERADOR_PARENTESIS_ABRIR parametr
                     |
                     FUNCTION IDENTIFICADOR OPERADOR_PARENTESIS_ABRIR parametros_entrada OPERADOR_PARENTESIS_CERRAR OPERADOR_DOS_PUNTOS tipos
                     declarar_datos
-                    BEGIN /* sin cuerpo */ asignar_valores_1 END
-                    ;
+                    BEGIN /* sin cuerpo */ asignar_valores_1 END;
 
 declarar_procedimientos ::= PROCEDURE IDENTIFICADOR OPERADOR_PARENTESIS_ABRIR parametros_entrada OPERADOR_PARENTESIS_CERRAR
                     declarar_datos
@@ -231,15 +185,12 @@ declarar_procedimientos ::= PROCEDURE IDENTIFICADOR OPERADOR_PARENTESIS_ABRIR pa
                     |
                     PROCEDURE IDENTIFICADOR OPERADOR_PARENTESIS_ABRIR parametros_entrada OPERADOR_PARENTESIS_CERRAR
                     declarar_datos
-                    BEGIN /* sin cuerpo */ END
-                    ;
+                    BEGIN /* sin cuerpo */ END;
 
 retorno_funcion ::= IDENTIFICADOR OPERADOR_ASIGNACION_1 expr_aritmeticas OPERADOR_PUNTO_Y_COMA;
 
 parametros_entrada ::= _parametros_entrada | epsilon;
-
 _parametros_entrada ::= tipos IDENTIFICADOR __parametros_entrada;
-
 __parametros_entrada ::= OPERADOR_COMA _parametros_entrada | epsilon;
 
 // ------------------------------ Cuerpo -------------------------------------------------------------------------------
@@ -247,8 +198,7 @@ __parametros_entrada ::= OPERADOR_COMA _parametros_entrada | epsilon;
 cuerpo ::= cuerpo instrucciones
          | cuerpo estruc_de_control
          | instrucciones
-         | estruc_de_control
-         ;
+         | estruc_de_control;
 
 _cuerpo ::= cuerpo | epsilon;
 
@@ -256,41 +206,46 @@ instrucciones ::= asignar_valores_1
                 | asignar_valores_2 OPERADOR_PUNTO_Y_COMA
                 | expr_read_write
                 | llamar_func_o_proc OPERADOR_PUNTO_Y_COMA
-                ;
+                | error OPERADOR_PUNTO_Y_COMA;
 
 asignar_valores_1 ::= IDENTIFICADOR OPERADOR_ASIGNACION_1 expr_aritmeticas OPERADOR_PUNTO_Y_COMA; // a := 12, a := b() + 3 - (4/d)..., f(...)
 
 asignar_valores_2 ::= IDENTIFICADOR ___operadores_aritmeticos expr_aritmeticas // a += 12
-                    | IDENTIFICADOR __operadores_aritmeticos; // a++, a--
+                    | IDENTIFICADOR __operadores_aritmeticos // a++, a--
+                    | __operadores_aritmeticos IDENTIFICADOR // ++a, --a
+                    | IDENTIFICADOR OPERADOR_ASIGNACION_1 IDENTIFICADOR __operadores_aritmeticos // a := b++
+                    | IDENTIFICADOR OPERADOR_ASIGNACION_1 __operadores_aritmeticos IDENTIFICADOR // a := ++b
+                    ;
 
 llamar_func_o_proc ::= IDENTIFICADOR OPERADOR_PARENTESIS_ABRIR parametros_llamada_func OPERADOR_PARENTESIS_CERRAR;
 
-parametros_llamada_func ::= tokens
-                        | tokens OPERADOR_COMA _parametros_llamada_func
+parametros_llamada_func ::= expr_aritmeticas OPERADOR_COMA _parametros_llamada_func
+                        | expr_aritmeticas
                         | epsilon;
 
-_parametros_llamada_func ::= tokens OPERADOR_COMA _parametros_llamada_func | tokens;
+_parametros_llamada_func ::= expr_aritmeticas OPERADOR_COMA _parametros_llamada_func | tokens;
 
 expr_read_write ::= expr_read
                   | expr_write;
 
 expr_read ::= READ _expr_read OPERADOR_PUNTO_Y_COMA;
-
 _expr_read ::= _tokens | epsilon;
 
 expr_write ::= WRITE OPERADOR_PARENTESIS_ABRIR _tokens _expr_write OPERADOR_PARENTESIS_CERRAR OPERADOR_PUNTO_Y_COMA;
-
 _expr_write ::= OPERADOR_COMA _tokens _expr_write | epsilon;
 
 // ------------------------------ Estructuras de Control ---------------------------------------------------------------
 
 estruc_de_control ::= sentencia_if
                     | sentencia_while
-                    | sentencia_for;
+                    | sentencia_for
+                    | error END;
 
 sentencia_if ::= IF expr_booleanas THEN
                  _cuerpo _sentencia_if
-                 END;
+                 END
+                 //| error OPERADOR_PARENTESIS_CERRAR {: ErrorUI("El condicional if no contiene expresiones booleanas", parser.cur_token.value.toString(), parser.cur_token.left, parser.cur_token.right); :}
+                 ;
 
 _sentencia_if ::= sentencia_else | epsilon;
 
@@ -315,7 +270,7 @@ expr_aritmeticas ::= tokens _expr_aritmeticas
 _expr_aritmeticas ::= _operadores_aritmeticos expr_aritmeticas | epsilon;
 
 expr_booleanas ::= tokens_boolean _expr_booleanas
-            | _tokens operadores_booleanos_1 _tokens _expr_booleanas
+            | tokens operadores_booleanos_1 tokens _expr_booleanas
             | OPERADOR_PARENTESIS_ABRIR expr_booleanas OPERADOR_PARENTESIS_CERRAR _expr_booleanas;
 
 _expr_booleanas ::= AND expr_booleanas | OR expr_booleanas | epsilon;
@@ -323,12 +278,8 @@ _expr_booleanas ::= AND expr_booleanas | OR expr_booleanas | epsilon;
 // ------------------------------ Símbolos -----------------------------------------------------------------------------
 
 operadores_aritmeticos ::= _operadores_aritmeticos | __operadores_aritmeticos | ___operadores_aritmeticos;
-
-_operadores_aritmeticos ::= OPERADOR_ADICION | OPERADOR_SUSTRACCION | OPERADOR_MULTIPLICACION | OPERADOR_DIVISION
-                        | MOD | DIV;
-
+_operadores_aritmeticos ::= OPERADOR_ADICION | OPERADOR_SUSTRACCION | OPERADOR_MULTIPLICACION | OPERADOR_DIVISION | MOD | DIV;
 __operadores_aritmeticos ::= OPERADOR_INCREMENTO | OPERADOR_DISMINUCION; // a++. a--
-
 ___operadores_aritmeticos ::= OPERADOR_ASIGNACION_ADICION | OPERADOR_ASIGNACION_SUSTRACCION
                              | OPERADOR_ASIGNACION_MULTIPLICACION | OPERADOR_ASIGNACION_DIVISION;
 
@@ -338,7 +289,6 @@ operadores_booleanos ::= OPERADOR_MAYOR_QUE | OPERADOR_MAYOR_IGUAL_QUE | OPERADO
 operadores_booleanos_1 ::= operadores_booleanos | OPERADOR_ASIGNACION_2;
 
 tokens ::= _tokens | tokens_boolean;
-
 _tokens ::= IDENTIFICADOR | LITERAL_NUM_ENTERO | LITERAL_NUM_FLOTANTE | LITERAL_STRING;
 
 tokens_boolean ::= TRUE | FALSE | NOT IDENTIFICADOR | NOT TRUE | NOT FALSE;
@@ -347,6 +297,4 @@ tipos ::= INT | SHORTINT | LONGINT | REAL | STRING | CHAR | BOOLEAN;
 
 epsilon ::= {: RESULT = new Symbol(-1); :};
 
-// ------------------------------ Errores -----------------------------------------------------------------------------_
-
-Er_retorno_funcion ::= asignar_valores | epsilon;
+// ------------------------------ Errores ------------------------------------------------------------------------------
