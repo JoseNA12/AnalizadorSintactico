@@ -19,6 +19,13 @@ import lexico.Main;
 
 parser code
 {:
+    @Override
+    protected int error_sync_size(){
+        return 1;
+    }
+
+    private Symbol tokenError;
+
     // Metodo al que se llama automaticamente ante algun error sintactico
     public void syntax_error(Symbol s)
     {
@@ -27,8 +34,9 @@ parser code
             String lexema = s.value.toString();
             int fila = s.left + 1;
             int columna = s.right;
+            tokenError = s;
 
-            System.err.println("Error sintactico en la linea: " + fila + " y columna: " + columna + ". No se esperaba el componente: " + lexema);
+            //System.err.println("Error sintactico en la linea: " + fila + " y columna: " + columna + ". No se esperaba el componente: " + lexema);
         }catch(Exception e) {}
     }
 
@@ -41,28 +49,33 @@ parser code
             int fila = s.left + 1;
             int columna = s.right;
 
-            System.err.println("Error sintactico inrrecuperable en la linea: " + fila + " y columna: " + columna + ". No se esperaba el componente: " + lexema);
+            String mensaje = "Error sintáctico irrecuperable, con el símbolo: " + lexema;
+            ErrorUI(mensaje, lexema, fila, columna);
+
+            //System.err.println("Error sintactico inrrecuperable en la linea: " + fila + " y columna: " + columna + ". No se esperaba el componente: " + lexema);
         }catch(Exception e) {}
     }
 
     public void report_error(String message, Object info)
     {
-        StringBuffer m = new StringBuffer(message);
-        if (info instanceof Symbol)
-        {
-            if (((Symbol)info).left != -1 && ((Symbol)info).right != -1)
-            {
-            int line = (((Symbol)info).left)+1;
-            int column = (((Symbol)info).right)+1;
-            m.append(" (line "+line+", column "+column+")");
+        if (info instanceof String){
+            System.out.println(message);
+        }
+        else {
+            if (info instanceof Symbol){
+                String m = "Error sintático en: " + message;
+                Symbol s = (Symbol)info;
+                m += ", con el símbolo: \"" + s.value.toString() + "\"";
+                ErrorUI(m, s.value.toString(), (s.left+1), s.right);
+            }else{
+                System.err.println(message);
             }
         }
-        System.err.println(m);
     }
 
     public void ErrorUI(String pMsg, String token, int linea, int columna)
     {
-        String msg = "Error en la linea: " + (linea) + ", columna: " + (columna) + ". " + pMsg;
+        String msg = pMsg + ". En la línea: " + (linea) + ", columna: " + (columna) + ".";
 
         Main.miInstancia.agregarErrorSintactico(msg);
     }
@@ -141,6 +154,9 @@ non terminal Symbol inicio, programa, encabezado, cuerpo, _cuerpo, variables, _v
 
 non terminal Symbol epsilon;
 
+//no terminales "de paso" para el manejo de errores (evitar conflictos shift/reduce, etc.)
+non terminal Symbol decl_variables, decl_constantes;
+
 start with inicio;
 
 // ------------------------------ Start --------------------------------------------------------------------------------
@@ -150,34 +166,67 @@ inicio ::= programa;
 programa ::= PROGRAM IDENTIFICADOR encabezado
             BEGIN
             _cuerpo
-            END;
+            END
+            | PROGRAM error
+                {:
+                    report_error("PROGRAM", tokenError);
+                    RESULT = new Symbol(-1);
+                :};
 
 // ------------------------------ Encabezado ---------------------------------------------------------------------------
 encabezado ::= declarar_datos declarar_func_proc;
 
 declarar_datos ::= constantes variables;
 
-constantes ::= CONST _constantes | epsilon;
+constantes ::= CONST decl_constantes | epsilon;
+decl_constantes ::= _constantes
+                    | error
+                        {:
+                            report_error("Declaración de constante", tokenError);
+                            RESULT = new Symbol(-1);
+                        :}
+                        OPERADOR_PUNTO_Y_COMA;
 _constantes ::= IDENTIFICADOR OPERADOR_ASIGNACION_2 tokens OPERADOR_PUNTO_Y_COMA __constantes;
 __constantes ::= _constantes | epsilon;
 
-variables ::= VAR _variables | epsilon;
+/*variables ::= VAR _variables | epsilon;
 _variables ::= IDENTIFICADOR __variables OPERADOR_DOS_PUNTOS tipos OPERADOR_PUNTO_Y_COMA ___variables;
 __variables ::= OPERADOR_COMA IDENTIFICADOR __variables | epsilon;
-___variables ::= _variables | epsilon;
+___variables ::= _variables | epsilon;*/
+
+variables ::= VAR decl_variables | epsilon;
+decl_variables ::= _variables
+                    | error
+                        {:
+                            report_error("Declaración de variable", tokenError);
+                            RESULT = new Symbol(-1);
+                        :}
+                        OPERADOR_PUNTO_Y_COMA;
+_variables ::= IDENTIFICADOR __variables;
+__variables ::= ___variables | OPERADOR_COMA _variables;
+___variables ::= OPERADOR_DOS_PUNTOS tipos OPERADOR_PUNTO_Y_COMA
+                | OPERADOR_DOS_PUNTOS tipos OPERADOR_PUNTO_Y_COMA _variables;
 
 declarar_func_proc ::= declarar_funciones declarar_func_proc
                      | declarar_procedimientos declarar_func_proc
                      | epsilon
-                     | error END;
+                     | error
+                         {:
+                             report_error("Declaración de función o procedimiento", tokenError);
+                             RESULT = new Symbol(-1);
+                         :}
+                         END declarar_func_proc;
+
+// ¡¡¡¡¡¡¡¡¡¡¡¡¡¡FALTA EL ERROR DE SI VIENE CON EL CUERPO Y NO TIENE EL RETORNO DE FUNCION!!!!!!!!!!!!!!!!!!!!!!!
 
 declarar_funciones ::= FUNCTION IDENTIFICADOR OPERADOR_PARENTESIS_ABRIR parametros_entrada OPERADOR_PARENTESIS_CERRAR OPERADOR_DOS_PUNTOS tipos
                     declarar_datos
                     BEGIN cuerpo asignar_valores_1 END
                     |
+                    //este llama a retorno de funcion para que maneje el error
                     FUNCTION IDENTIFICADOR OPERADOR_PARENTESIS_ABRIR parametros_entrada OPERADOR_PARENTESIS_CERRAR OPERADOR_DOS_PUNTOS tipos
                     declarar_datos
-                    BEGIN /* sin cuerpo */ asignar_valores_1 END;
+                    BEGIN /* sin cuerpo */ retorno_funcion END;
 
 declarar_procedimientos ::= PROCEDURE IDENTIFICADOR OPERADOR_PARENTESIS_ABRIR parametros_entrada OPERADOR_PARENTESIS_CERRAR
                     declarar_datos
@@ -187,7 +236,13 @@ declarar_procedimientos ::= PROCEDURE IDENTIFICADOR OPERADOR_PARENTESIS_ABRIR pa
                     declarar_datos
                     BEGIN /* sin cuerpo */ END;
 
-retorno_funcion ::= IDENTIFICADOR OPERADOR_ASIGNACION_1 expr_aritmeticas OPERADOR_PUNTO_Y_COMA;
+retorno_funcion ::= IDENTIFICADOR OPERADOR_ASIGNACION_1 expr_aritmeticas OPERADOR_PUNTO_Y_COMA
+                    | /* epsilon */
+                    {:  //es aceptado pero se reporta como error
+                        Symbol tokenAct = (Symbol)CUP$Syntax$stack.peek();
+                        report_error("Retorno de función", tokenAct);
+                        RESULT = new Symbol(-1);
+                    :};
 
 parametros_entrada ::= _parametros_entrada | epsilon;
 _parametros_entrada ::= tipos IDENTIFICADOR __parametros_entrada;
@@ -206,7 +261,12 @@ instrucciones ::= asignar_valores_1
                 | asignar_valores_2 OPERADOR_PUNTO_Y_COMA
                 | expr_read_write
                 | llamar_func_o_proc OPERADOR_PUNTO_Y_COMA
-                | error OPERADOR_PUNTO_Y_COMA;
+                | error
+                     {:
+                         report_error("Expresión", tokenError);
+                         RESULT = new Symbol(-1);
+                     :}
+                     OPERADOR_PUNTO_Y_COMA;
 
 asignar_valores_1 ::= IDENTIFICADOR OPERADOR_ASIGNACION_1 expr_aritmeticas OPERADOR_PUNTO_Y_COMA; // a := 12, a := b() + 3 - (4/d)..., f(...)
 
@@ -214,8 +274,7 @@ asignar_valores_2 ::= IDENTIFICADOR ___operadores_aritmeticos expr_aritmeticas /
                     | IDENTIFICADOR __operadores_aritmeticos // a++, a--
                     | __operadores_aritmeticos IDENTIFICADOR // ++a, --a
                     | IDENTIFICADOR OPERADOR_ASIGNACION_1 IDENTIFICADOR __operadores_aritmeticos // a := b++
-                    | IDENTIFICADOR OPERADOR_ASIGNACION_1 __operadores_aritmeticos IDENTIFICADOR // a := ++b
-                    ;
+                    | IDENTIFICADOR OPERADOR_ASIGNACION_1 __operadores_aritmeticos IDENTIFICADOR; // a := ++b
 
 llamar_func_o_proc ::= IDENTIFICADOR OPERADOR_PARENTESIS_ABRIR parametros_llamada_func OPERADOR_PARENTESIS_CERRAR;
 
@@ -228,24 +287,39 @@ _parametros_llamada_func ::= expr_aritmeticas OPERADOR_COMA _parametros_llamada_
 expr_read_write ::= expr_read
                   | expr_write;
 
-expr_read ::= READ _expr_read OPERADOR_PUNTO_Y_COMA;
+expr_read ::= READ OPERADOR_PARENTESIS_ABRIR _expr_read OPERADOR_PARENTESIS_CERRAR OPERADOR_PUNTO_Y_COMA
+                | READ error
+                    {:
+                        report_error("Función READ", tokenError);
+                        RESULT = new Symbol(-1);
+                    :}
+                    OPERADOR_PUNTO_Y_COMA;
 _expr_read ::= _tokens | epsilon;
 
-expr_write ::= WRITE OPERADOR_PARENTESIS_ABRIR _tokens _expr_write OPERADOR_PARENTESIS_CERRAR OPERADOR_PUNTO_Y_COMA;
+expr_write ::= WRITE OPERADOR_PARENTESIS_ABRIR _tokens _expr_write OPERADOR_PARENTESIS_CERRAR OPERADOR_PUNTO_Y_COMA
+                | WRITE error
+                    {:
+                        report_error("Función WRITE", tokenError);
+                        RESULT = new Symbol(-1);
+                    :}
+                    OPERADOR_PUNTO_Y_COMA;
 _expr_write ::= OPERADOR_COMA _tokens _expr_write | epsilon;
 
 // ------------------------------ Estructuras de Control ---------------------------------------------------------------
 
 estruc_de_control ::= sentencia_if
                     | sentencia_while
-                    | sentencia_for
-                    | error END;
+                    | sentencia_for;
 
 sentencia_if ::= IF expr_booleanas THEN
                  _cuerpo _sentencia_if
                  END
-                 //| error OPERADOR_PARENTESIS_CERRAR {: ErrorUI("El condicional if no contiene expresiones booleanas", parser.cur_token.value.toString(), parser.cur_token.left, parser.cur_token.right); :}
-                 ;
+                 | IF error
+                     {:
+                         report_error("Sentencia IF", tokenError);
+                         RESULT = new Symbol(-1);
+                     :}
+                     END;
 
 _sentencia_if ::= sentencia_else | epsilon;
 
@@ -254,12 +328,24 @@ sentencia_else ::= ELSE _cuerpo;
 sentencia_while ::= WHILE expr_booleanas DO
                     BEGIN
                     _cuerpo
-                    END;
+                    END
+                    | WHILE error
+                     {:
+                         report_error("Sentencia WHILE", tokenError);
+                         RESULT = new Symbol(-1);
+                     :}
+                     END;
 
 sentencia_for ::= FOR IDENTIFICADOR OPERADOR_ASIGNACION_1 tokens TO tokens DO
                   BEGIN
                   _cuerpo
-                  END;
+                  END
+                  | FOR error
+                     {:
+                         report_error("Sentencia FOR", tokenError);
+                         RESULT = new Symbol(-1);
+                     :}
+                     END;
 
 // ------------------------------ Expresiones --------------------------------------------------------------------------
 

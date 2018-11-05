@@ -121,7 +121,7 @@ public class Main extends Application implements Cloneable  {
 
     public void probarLexerFile()
     {
-        reestablecerComponentes(); agregarErrorSintactico("");
+        reestablecerComponentes();
 
         File fichero = new File ("fichero.txt");
         PrintWriter writer;
@@ -372,6 +372,7 @@ public class Main extends Application implements Cloneable  {
         tokenslistErrores = new LinkedList<LineaToken>();
         info_tabla_tokens.clear();
         info_tabla_errores.clear();
+        ta_errores_sintacticos_id.clear();
     }
 
     /**
@@ -386,6 +387,7 @@ public class Main extends Application implements Cloneable  {
 
         //Show save file dialog
         File file = fileChooser.showOpenDialog(miPrimaryStage);
+        //File file = new File("fichero.txt");
         if(file != null){
             // ta_insertar_texto_id.setText(readFile(file));
             ca_insertar_texto_id.replaceText(readFile(file));
@@ -439,16 +441,7 @@ public class Main extends Application implements Cloneable  {
 
     public void agregarErrorSintactico(String pError)
     {
-        String textoAnterior = ta_errores_sintacticos_id.getText();
-
-        if (textoAnterior.trim().equals(""))
-        {
-            ta_errores_sintacticos_id.setText(pError);
-        }
-        else
-        {
-            ta_errores_sintacticos_id.setText(textoAnterior + "\n" + pError);
-        }
+        ta_errores_sintacticos_id.appendText("\n" + pError);
     }
 
     // ============================ CodeArea ============================ \\
