@@ -155,7 +155,7 @@ non terminal Symbol inicio, programa, encabezado, cuerpo, _cuerpo, variables, _v
 non terminal Symbol epsilon;
 
 //no terminales "de paso" para el manejo de errores (evitar conflictos shift/reduce, etc.)
-non terminal Symbol decl_variables, decl_constantes;
+//non terminal Symbol decl_variables, decl_constantes, _declarar_datos;
 
 start with inicio;
 
@@ -167,6 +167,14 @@ programa ::= PROGRAM IDENTIFICADOR encabezado
             BEGIN
             _cuerpo
             END
+            | PROGRAM IDENTIFICADOR encabezado
+                BEGIN
+                _cuerpo
+                {:
+                    Symbol tokenAct = (Symbol)CUP$Syntax$stack.elementAt(CUP$Syntax$top-1);
+                    report_error("PROGRAM sin cierre END", tokenAct);
+                    RESULT = new Symbol(-1);
+                :}
             | PROGRAM error
                 {:
                     report_error("PROGRAM", tokenError);
@@ -174,48 +182,51 @@ programa ::= PROGRAM IDENTIFICADOR encabezado
                 :};
 
 // ------------------------------ Encabezado ---------------------------------------------------------------------------
-encabezado ::= declarar_datos declarar_func_proc;
+encabezado ::= declarar_datos declarar_func_proc
+            | error
+                {:
+                    report_error("Declaraciones globales", tokenError);
+                    RESULT = new Symbol(-1);
+                :};
 
 declarar_datos ::= constantes variables;
 
-constantes ::= CONST decl_constantes | epsilon;
-decl_constantes ::= _constantes
-                    | error
-                        {:
-                            report_error("Declaración de constante", tokenError);
-                            RESULT = new Symbol(-1);
-                        :}
-                        OPERADOR_PUNTO_Y_COMA;
+constantes ::= CONST _constantes | epsilon
+            | CONST error
+                {:
+                    report_error("Declaración de constante", tokenError);
+                    RESULT = new Symbol(-1);
+                :}
+                OPERADOR_PUNTO_Y_COMA __constantes;
 _constantes ::= IDENTIFICADOR OPERADOR_ASIGNACION_2 tokens OPERADOR_PUNTO_Y_COMA __constantes;
 __constantes ::= _constantes | epsilon;
 
-/*variables ::= VAR _variables | epsilon;
+variables ::= VAR _variables | epsilon
+            | VAR error
+                {:
+                    report_error("Declaración de variable", tokenError);
+                    RESULT = new Symbol(-1);
+                :}
+                OPERADOR_PUNTO_Y_COMA ___variables;
 _variables ::= IDENTIFICADOR __variables OPERADOR_DOS_PUNTOS tipos OPERADOR_PUNTO_Y_COMA ___variables;
 __variables ::= OPERADOR_COMA IDENTIFICADOR __variables | epsilon;
-___variables ::= _variables | epsilon;*/
-
-variables ::= VAR decl_variables | epsilon;
-decl_variables ::= _variables
-                    | error
-                        {:
-                            report_error("Declaración de variable", tokenError);
-                            RESULT = new Symbol(-1);
-                        :}
-                        OPERADOR_PUNTO_Y_COMA;
-_variables ::= IDENTIFICADOR __variables;
-__variables ::= ___variables | OPERADOR_COMA _variables;
-___variables ::= OPERADOR_DOS_PUNTOS tipos OPERADOR_PUNTO_Y_COMA
-                | OPERADOR_DOS_PUNTOS tipos OPERADOR_PUNTO_Y_COMA _variables;
+___variables ::= _variables | epsilon;
 
 declarar_func_proc ::= declarar_funciones declarar_func_proc
                      | declarar_procedimientos declarar_func_proc
                      | epsilon
-                     | error
+                     | FUNCTION error
                          {:
-                             report_error("Declaración de función o procedimiento", tokenError);
+                             report_error("Declaración de función", tokenError);
                              RESULT = new Symbol(-1);
                          :}
-                         END declarar_func_proc;
+                         END declarar_func_proc
+                     | PROCEDURE error
+                          {:
+                              report_error("Declaración de procedimiento", tokenError);
+                              RESULT = new Symbol(-1);
+                          :}
+                          END declarar_func_proc;
 
 // ¡¡¡¡¡¡¡¡¡¡¡¡¡¡FALTA EL ERROR DE SI VIENE CON EL CUERPO Y NO TIENE EL RETORNO DE FUNCION!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -253,7 +264,12 @@ __parametros_entrada ::= OPERADOR_COMA _parametros_entrada | epsilon;
 cuerpo ::= cuerpo instrucciones
          | cuerpo estruc_de_control
          | instrucciones
-         | estruc_de_control;
+         | estruc_de_control
+         | error
+            {:
+                report_error("Cuerpo", tokenError);
+                RESULT = new Symbol(-1);
+            :};
 
 _cuerpo ::= cuerpo | epsilon;
 
@@ -294,7 +310,7 @@ expr_read ::= READ OPERADOR_PARENTESIS_ABRIR _expr_read OPERADOR_PARENTESIS_CERR
                         RESULT = new Symbol(-1);
                     :}
                     OPERADOR_PUNTO_Y_COMA;
-_expr_read ::= _tokens | epsilon;
+_expr_read ::= IDENTIFICADOR | epsilon; //_tokens | epsilon;
 
 expr_write ::= WRITE OPERADOR_PARENTESIS_ABRIR _tokens _expr_write OPERADOR_PARENTESIS_CERRAR OPERADOR_PUNTO_Y_COMA
                 | WRITE error
