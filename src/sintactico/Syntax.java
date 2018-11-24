@@ -577,7 +577,7 @@ public class Syntax extends java_cup.runtime.lr_parser {
             int columna = s.right;
             tokenError = s;
 
-            System.err.println("Error sintactico en la linea: " + fila + " y columna: " + columna + ". No se esperaba el componente: " + lexema);
+            //System.err.println("Error sintactico en la linea: " + fila + " y columna: " + columna + ". No se esperaba el componente: " + lexema);
         }catch(Exception e) {}
     }
 
@@ -593,7 +593,7 @@ public class Syntax extends java_cup.runtime.lr_parser {
             String mensaje = "Error sintáctico irrecuperable, con el símbolo: " + lexema;
             ErrorUI(mensaje, lexema, fila, columna);
 
-            System.err.println("Error sintactico inrrecuperable en la linea: " + fila + " y columna: " + columna + ". No se esperaba el componente: " + lexema);
+            //System.err.println("Error sintactico inrrecuperable en la linea: " + fila + " y columna: " + columna + ". No se esperaba el componente: " + lexema);
         }catch(Exception e) {}
     }
 
